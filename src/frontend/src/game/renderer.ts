@@ -147,7 +147,6 @@ function drawHat(
       break;
     }
     case "wizard": {
-      // Tall pointy wizard hat
       ctx.fillStyle = "#6030a0";
       ctx.strokeStyle = "#9060d0";
       ctx.lineWidth = 1.5;
@@ -158,12 +157,10 @@ function drawHat(
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-      // brim
       ctx.fillStyle = "#7040b0";
       ctx.beginPath();
       ctx.ellipse(x, headTopY + 2, 17, 5, 0, 0, Math.PI * 2);
       ctx.fill();
-      // star
       ctx.fillStyle = "#ffe040";
       ctx.font = "8px sans-serif";
       ctx.textAlign = "center";
@@ -171,7 +168,6 @@ function drawHat(
       break;
     }
     case "viking": {
-      // Viking helmet with horns
       ctx.fillStyle = "#888";
       ctx.strokeStyle = "#555";
       ctx.lineWidth = 1.5;
@@ -179,7 +175,6 @@ function drawHat(
       ctx.ellipse(x, headTopY + 4, 15, 8, 0, Math.PI, 0);
       ctx.fill();
       ctx.stroke();
-      // left horn
       ctx.fillStyle = "#ccc";
       ctx.beginPath();
       ctx.moveTo(x - 13, headTopY + 2);
@@ -187,7 +182,6 @@ function drawHat(
       ctx.quadraticCurveTo(x - 14, headTopY - 10, x - 10, headTopY);
       ctx.closePath();
       ctx.fill();
-      // right horn
       ctx.beginPath();
       ctx.moveTo(x + 13, headTopY + 2);
       ctx.quadraticCurveTo(x + 22, headTopY - 8, x + 18, headTopY - 18);
@@ -197,14 +191,12 @@ function drawHat(
       break;
     }
     case "ninja": {
-      // Ninja face wrap / mask
       ctx.fillStyle = "#222";
       ctx.beginPath();
       ctx.ellipse(x, headTopY + 10, 16, 12, 0, Math.PI, 0);
       ctx.fill();
       ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(x - 15, headTopY + 4, 30, 10);
-      // eyes showing
       ctx.fillStyle = "#e05050";
       ctx.beginPath();
       ctx.ellipse(x + facing * 4, headTopY + 5, 4, 3, 0, 0, Math.PI * 2);
@@ -212,27 +204,22 @@ function drawHat(
       break;
     }
     case "cowboy": {
-      // Wide brim cowboy hat
       ctx.fillStyle = "#8B5E3C";
       ctx.strokeStyle = "#5C3D1E";
       ctx.lineWidth = 1.5;
-      // crown
       ctx.beginPath();
       ctx.ellipse(x, headTopY + 2, 12, 10, 0, Math.PI, 0);
       ctx.fill();
       ctx.stroke();
-      // wide brim
       ctx.beginPath();
       ctx.ellipse(x, headTopY + 2, 22, 5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      // band
       ctx.fillStyle = "#D8C38A";
       ctx.fillRect(x - 12, headTopY - 1, 24, 3);
       break;
     }
     case "party": {
-      // Colorful party hat (triangle)
       const colors = ["#ff4080", "#ffcc00", "#00ccff", "#ff6020"];
       ctx.fillStyle = colors[0];
       ctx.beginPath();
@@ -241,7 +228,6 @@ function drawHat(
       ctx.lineTo(x + 12, headTopY + 2);
       ctx.closePath();
       ctx.fill();
-      // stripes
       for (let i = 0; i < 3; i++) {
         ctx.fillStyle = colors[i + 1];
         ctx.globalAlpha = 0.6;
@@ -253,7 +239,6 @@ function drawHat(
         ctx.fill();
       }
       ctx.globalAlpha = 1;
-      // pom pom
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
       ctx.arc(x, headTopY - 22, 3, 0, Math.PI * 2);
@@ -261,10 +246,8 @@ function drawHat(
       break;
     }
     case "bunny": {
-      // Bunny ears
       ctx.strokeStyle = color;
       ctx.lineWidth = 3;
-      // left ear
       ctx.beginPath();
       ctx.moveTo(x - 8, headTopY);
       ctx.quadraticCurveTo(x - 14, headTopY - 20, x - 8, headTopY - 28);
@@ -277,7 +260,6 @@ function drawHat(
       ctx.stroke();
       ctx.strokeStyle = color;
       ctx.lineWidth = 3;
-      // right ear
       ctx.beginPath();
       ctx.moveTo(x + 8, headTopY);
       ctx.quadraticCurveTo(x + 14, headTopY - 20, x + 8, headTopY - 28);
@@ -384,7 +366,6 @@ function drawStickFigure(
   const cx = pos.x;
   const feet = pos.y;
 
-  // status effects behind figure
   drawStatusEffects(ctx, player, cx, feet, tick);
 
   if (player.isInvincible && !player.shielded) {
@@ -522,7 +503,6 @@ function drawProjectiles(
     ctx.beginPath();
 
     if (proj.type === "frost") {
-      // snowflake-like projectile
       ctx.save();
       ctx.translate(proj.x, proj.y);
       ctx.rotate(tick * 4);
@@ -739,7 +719,7 @@ function drawRoundEnd(ctx: CanvasRenderingContext2D, state: GameState) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// FINISHER ANIMATIONS
+// FINISHER ANIMATIONS — Real drawn stick figure poses
 // ──────────────────────────────────────────────────────────────────────────────
 
 function getFinisherCategory(ability: SpecialAbility): string {
@@ -781,6 +761,384 @@ function getFinisherCategory(ability: SpecialAbility): string {
   return "slash";
 }
 
+// ── Pose system ──────────────────────────────────────────────────────────────
+
+interface StickPose {
+  headTilt: number; // head tilt offset (pixels, + = toward facing)
+  bodyLean: number; // body lean angle from vertical (radians, + = toward facing)
+  rightArmAngle: number; // right (forward) arm: 0=horizontal fwd, PI/2=down, -PI/2=up
+  leftArmAngle: number; // left (back) arm: 0=horizontal bwd, PI/2=down, -PI/2=up
+  rightLegAngle: number; // right leg from vertical: + = forward spread
+  leftLegAngle: number; // left leg from vertical: + = backward spread
+  xOffset: number; // absolute x offset from base position
+  yOffset: number; // y offset: positive = upward
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * Math.max(0, Math.min(1, t));
+}
+
+function lerpPose(a: StickPose, b: StickPose, t: number): StickPose {
+  return {
+    headTilt: lerp(a.headTilt, b.headTilt, t),
+    bodyLean: lerp(a.bodyLean, b.bodyLean, t),
+    rightArmAngle: lerp(a.rightArmAngle, b.rightArmAngle, t),
+    leftArmAngle: lerp(a.leftArmAngle, b.leftArmAngle, t),
+    rightLegAngle: lerp(a.rightLegAngle, b.rightLegAngle, t),
+    leftLegAngle: lerp(a.leftLegAngle, b.leftLegAngle, t),
+    xOffset: lerp(a.xOffset, b.xOffset, t),
+    yOffset: lerp(a.yOffset, b.yOffset, t),
+  };
+}
+
+function getPoseAt(
+  keyframes: Array<{ t: number; pose: StickPose }>,
+  t: number,
+): StickPose {
+  if (t <= keyframes[0].t) return keyframes[0].pose;
+  if (t >= keyframes[keyframes.length - 1].t)
+    return keyframes[keyframes.length - 1].pose;
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    const a = keyframes[i];
+    const b = keyframes[i + 1];
+    if (t >= a.t && t <= b.t) {
+      const localT = (t - a.t) / (b.t - a.t);
+      return lerpPose(a.pose, b.pose, localT);
+    }
+  }
+  return keyframes[keyframes.length - 1].pose;
+}
+
+// Draws a stick figure at a given position using a pose struct.
+// facing: 1 = facing right, -1 = facing left
+// All pose angles are relative to facing direction for symmetry.
+function drawStickFigurePose(
+  ctx: CanvasRenderingContext2D,
+  baseX: number,
+  feetY: number,
+  color: string,
+  pose: StickPose,
+  hat: Player["customization"]["hat"],
+  facing: number,
+  alpha = 1,
+) {
+  const HEAD_R = 18;
+  const BODY_LEN = 48;
+  const ARM_LEN = 32;
+  const LEG_LEN = 40;
+
+  const cx = baseX + pose.xOffset;
+  const baseYAdj = feetY - pose.yOffset;
+
+  // Hip: sits roughly at feetY minus leg length (legs hang from hip)
+  const hipX = cx;
+  const hipY = baseYAdj - LEG_LEN * 0.82;
+
+  // Shoulder: body extends upward from hip at bodyLean angle
+  // bodyLean positive = leans toward facing direction
+  const shoulderX = hipX + Math.sin(pose.bodyLean) * BODY_LEN * facing;
+  const shoulderY = hipY - Math.cos(pose.bodyLean) * BODY_LEN;
+
+  // Head: above shoulder, slight tilt
+  const headX = shoulderX + pose.headTilt * facing;
+  const headY = shoulderY - HEAD_R * 1.4;
+
+  // Mid-body: arm attachment point
+  const midX = (hipX + shoulderX) / 2;
+  const midY = (hipY + shoulderY) / 2;
+
+  // Right arm: 0 = extends horizontally toward facing direction
+  //            -PI/2 = points straight up, PI/2 = points down
+  const rightArmEndX = midX + Math.cos(pose.rightArmAngle) * ARM_LEN * facing;
+  const rightArmEndY = midY + Math.sin(pose.rightArmAngle) * ARM_LEN;
+
+  // Left arm: 0 = extends horizontally away from facing direction
+  const leftArmEndX = midX - Math.cos(pose.leftArmAngle) * ARM_LEN * facing;
+  const leftArmEndY = midY + Math.sin(pose.leftArmAngle) * ARM_LEN;
+
+  // Right leg: 0 = straight down, positive = forward (toward facing dir)
+  const rightLegEndX = hipX + Math.sin(pose.rightLegAngle) * LEG_LEN * facing;
+  const rightLegEndY = hipY + Math.cos(pose.rightLegAngle) * LEG_LEN;
+
+  // Left leg: 0 = straight down, positive = backward
+  const leftLegEndX = hipX - Math.sin(pose.leftLegAngle) * LEG_LEN * facing;
+  const leftLegEndY = hipY + Math.cos(pose.leftLegAngle) * LEG_LEN;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+
+  // Body
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY);
+  ctx.lineTo(shoulderX, shoulderY);
+  ctx.stroke();
+
+  // Head
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.arc(headX, headY, HEAD_R, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Eye
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.arc(headX + facing * 5, headY - 3, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Arms
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.moveTo(midX, midY);
+  ctx.lineTo(rightArmEndX, rightArmEndY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(midX, midY);
+  ctx.lineTo(leftArmEndX, leftArmEndY);
+  ctx.stroke();
+
+  // Legs
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY);
+  ctx.lineTo(rightLegEndX, rightLegEndY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY);
+  ctx.lineTo(leftLegEndX, leftLegEndY);
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // Hat drawn on top
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  drawHat(ctx, headX, headY - HEAD_R, hat, color, facing);
+  ctx.restore();
+}
+
+// ── Reusable base poses ──────────────────────────────────────────────────────
+
+const POSE_STAND: StickPose = {
+  headTilt: 0,
+  bodyLean: 0,
+  rightArmAngle: 0.7,
+  leftArmAngle: 0.7,
+  rightLegAngle: 0.13,
+  leftLegAngle: 0.13,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const POSE_FIGHT: StickPose = {
+  headTilt: 4,
+  bodyLean: 0.18,
+  rightArmAngle: -0.25,
+  leftArmAngle: 0.45,
+  rightLegAngle: 0.35,
+  leftLegAngle: 0.28,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const POSE_CROUCH: StickPose = {
+  headTilt: 2,
+  bodyLean: 0.22,
+  rightArmAngle: -0.15,
+  leftArmAngle: 0.2,
+  rightLegAngle: 0.5,
+  leftLegAngle: 0.5,
+  xOffset: 0,
+  yOffset: -8,
+};
+
+const POSE_LEAP: StickPose = {
+  headTilt: 3,
+  bodyLean: 0.15,
+  rightArmAngle: -1.1,
+  leftArmAngle: -0.9,
+  rightLegAngle: -0.4,
+  leftLegAngle: 0.65,
+  xOffset: 0,
+  yOffset: 70,
+};
+
+const POSE_SLAM: StickPose = {
+  headTilt: 5,
+  bodyLean: 0.4,
+  rightArmAngle: 1.1,
+  leftArmAngle: 1.0,
+  rightLegAngle: 0.35,
+  leftLegAngle: 0.25,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const POSE_PUNCH: StickPose = {
+  headTilt: 4,
+  bodyLean: 0.38,
+  rightArmAngle: 0.08,
+  leftArmAngle: 0.7,
+  rightLegAngle: 0.28,
+  leftLegAngle: 0.3,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const POSE_ARMS_UP: StickPose = {
+  headTilt: -2,
+  bodyLean: -0.05,
+  rightArmAngle: -1.1,
+  leftArmAngle: -0.9,
+  rightLegAngle: 0.22,
+  leftLegAngle: 0.22,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const _POSE_ARMS_FORWARD: StickPose = {
+  headTilt: 3,
+  bodyLean: 0.28,
+  rightArmAngle: 0.05,
+  leftArmAngle: -0.2,
+  rightLegAngle: 0.25,
+  leftLegAngle: 0.3,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const POSE_ICE_EXTEND: StickPose = {
+  headTilt: 3,
+  bodyLean: 0.2,
+  rightArmAngle: 0.0,
+  leftArmAngle: 0.55,
+  rightLegAngle: 0.28,
+  leftLegAngle: 0.22,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const POSE_SPIN_A: StickPose = {
+  headTilt: 0,
+  bodyLean: -0.1,
+  rightArmAngle: -0.5,
+  leftArmAngle: -1.0,
+  rightLegAngle: -0.5,
+  leftLegAngle: 0.8,
+  xOffset: 0,
+  yOffset: 15,
+};
+
+const POSE_SPIN_B: StickPose = {
+  headTilt: 0,
+  bodyLean: 0.6,
+  rightArmAngle: 0.5,
+  leftArmAngle: -0.8,
+  rightLegAngle: 1.0,
+  leftLegAngle: -0.3,
+  xOffset: 0,
+  yOffset: 20,
+};
+
+const POSE_SPIN_C: StickPose = {
+  headTilt: 0,
+  bodyLean: -0.3,
+  rightArmAngle: -1.2,
+  leftArmAngle: 0.3,
+  rightLegAngle: 0.5,
+  leftLegAngle: -0.6,
+  xOffset: 0,
+  yOffset: 10,
+};
+
+// Victim poses
+const VPOSE_STAND: StickPose = {
+  headTilt: 0,
+  bodyLean: 0,
+  rightArmAngle: 0.7,
+  leftArmAngle: 0.7,
+  rightLegAngle: 0.13,
+  leftLegAngle: 0.13,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const VPOSE_STAGGER: StickPose = {
+  headTilt: -5,
+  bodyLean: -0.3,
+  rightArmAngle: -0.5,
+  leftArmAngle: -0.75,
+  rightLegAngle: 0.12,
+  leftLegAngle: 0.12,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const VPOSE_FROZEN: StickPose = {
+  headTilt: 0,
+  bodyLean: 0,
+  rightArmAngle: Math.PI / 2,
+  leftArmAngle: Math.PI / 2,
+  rightLegAngle: 0,
+  leftLegAngle: 0,
+  xOffset: 0,
+  yOffset: 0,
+};
+
+const VPOSE_FLY_UP: StickPose = {
+  headTilt: -4,
+  bodyLean: -0.2,
+  rightArmAngle: -0.9,
+  leftArmAngle: -1.1,
+  rightLegAngle: -0.2,
+  leftLegAngle: -0.1,
+  xOffset: 0,
+  yOffset: 80,
+};
+
+const VPOSE_FLY_BACK: StickPose = {
+  headTilt: -6,
+  bodyLean: -0.55,
+  rightArmAngle: -0.8,
+  leftArmAngle: -1.05,
+  rightLegAngle: -0.15,
+  leftLegAngle: -0.05,
+  xOffset: 70,
+  yOffset: 25,
+};
+
+const VPOSE_CRUMPLE: StickPose = {
+  headTilt: 8,
+  bodyLean: 1.1,
+  rightArmAngle: 1.2,
+  leftArmAngle: 1.0,
+  rightLegAngle: 0.55,
+  leftLegAngle: -0.2,
+  xOffset: 50,
+  yOffset: -5,
+};
+
+const VPOSE_COLLAPSE: StickPose = {
+  headTilt: 6,
+  bodyLean: 0.9,
+  rightArmAngle: 0.9,
+  leftArmAngle: 0.7,
+  rightLegAngle: 0.6,
+  leftLegAngle: 0.1,
+  xOffset: 20,
+  yOffset: -10,
+};
+
+// ── Main finisher overlay ────────────────────────────────────────────────────
+
 function drawFinisherOverlay(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -792,98 +1150,223 @@ function drawFinisherOverlay(
   const victimIdx = attackerIdx === 0 ? 1 : 0;
   const attacker = state.players[attackerIdx];
   const victim = state.players[victimIdx];
-  const t = 1 - state.finisherTimer / FINISHER_DURATION; // 0→1 progress
+  const t = 1 - state.finisherTimer / FINISHER_DURATION;
   const ability = attacker.customization.special;
   const atkColor = PLAYER_COLOR_HEX[attacker.customization.color];
+  const vicColor = PLAYER_COLOR_HEX[victim.customization.color];
   const category = getFinisherCategory(ability);
 
-  const vx = victim.pos.x;
-  const vy = victim.pos.y;
-  const ax = attacker.pos.x;
+  const attackerOnLeft = attacker.pos.x <= victim.pos.x;
+  const atkBaseX = attackerOnLeft ? 240 : 560;
+  const vicBaseX = attackerOnLeft ? 560 : 240;
+  const feetY = 358;
+  const atkFacing = attackerOnLeft ? 1 : -1;
+  const vicFacing = -atkFacing;
 
-  // ── Phase 1: screen flash + "FINISH HIM!" text (0–0.2) ──────────────────
-  if (t < 0.2) {
-    const flashAlpha = ((0.2 - t) / 0.2) * 0.85;
-    ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+  const impactX = vicBaseX;
+  const impactY = feetY - 55;
+
+  const impactWords: Record<string, string> = {
+    fire: "INFERNO!",
+    ice: "SHATTER!",
+    lightning: "VOLTAGE!",
+    shadow: "SLASH!",
+    earth: "QUAKE!",
+    energy: "BLAST!",
+    drain: "DRAIN!",
+    wind: "IMPACT!",
+  };
+  const impactWord = impactWords[category] ?? "IMPACT!";
+
+  // Phase 1: cinematic pull-in dark overlay
+  const overlayAlpha = t < 0.08 ? (t / 0.08) * 0.82 : 0.82;
+  ctx.fillStyle = `rgba(0,0,0,${overlayAlpha})`;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // White flash on open
+  if (t < 0.12) {
+    const flashA = (1 - t / 0.12) * 0.95;
+    ctx.fillStyle = `rgba(255,255,255,${flashA})`;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   }
 
-  // ── Dark cinematic bars (letterbox) ─────────────────────────────────────
-  const barH = 60;
-  ctx.fillStyle = "rgba(0,0,0,0.88)";
-  ctx.fillRect(0, 0, CANVAS_W, barH);
-  ctx.fillRect(0, CANVAS_H - barH, CANVAS_W, barH);
+  // Manga diagonal background lines (phases 2-4)
+  if (t > 0.15 && t < 0.65) {
+    const lineA = Math.sin(((t - 0.15) / 0.5) * Math.PI) * 0.07;
+    ctx.save();
+    ctx.globalAlpha = lineA;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    const diagonals: [number, number, number, number][] = [
+      [0, 0, CANVAS_W, CANVAS_H],
+      [CANVAS_W, 0, 0, CANVAS_H],
+      [0, CANVAS_H * 0.3, CANVAS_W, CANVAS_H * 0.7],
+      [CANVAS_W, CANVAS_H * 0.3, 0, CANVAS_H * 0.7],
+      [CANVAS_W * 0.2, 0, CANVAS_W * 0.8, CANVAS_H],
+    ];
+    for (const [x1, y1, x2, y2] of diagonals) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
-  // ── Ability category visual ──────────────────────────────────────────────
+  // Ground line
+  {
+    const g = ctx.createLinearGradient(0, feetY, CANVAS_W, feetY);
+    g.addColorStop(0, "rgba(255,255,255,0)");
+    g.addColorStop(0.5, "rgba(255,255,255,0.35)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.strokeStyle = g;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, feetY);
+    ctx.lineTo(CANVAS_W, feetY);
+    ctx.stroke();
+  }
+
+  // Figure state
+  let atkPose: StickPose = POSE_STAND;
+  let vicPose: StickPose = VPOSE_STAND;
+  let atkAlpha = 1;
+  let vicAlpha = 1;
+  let shadowFlipped = false;
+
   ctx.save();
 
   switch (category) {
     case "fire": {
-      // Rising inferno column at victim
-      const fireT = Math.max(0, (t - 0.1) / 0.8);
-      const pillarH = fireT * (CANVAS_H - barH * 2);
-      for (let i = 0; i < 8; i++) {
-        const ox = (i - 3.5) * 14;
-        const flicker = Math.sin(tick * 20 + i * 1.3) * 8;
-        const grad = ctx.createLinearGradient(
-          vx + ox,
-          vy,
-          vx + ox,
-          vy - pillarH + flicker,
-        );
-        grad.addColorStop(0, "rgba(255,80,0,0)");
-        grad.addColorStop(0.4, `rgba(255,120,0,${0.7 * fireT})`);
-        grad.addColorStop(1, `rgba(255,220,60,${0.9 * fireT})`);
-        ctx.fillStyle = grad;
-        ctx.fillRect(vx + ox - 7, vy - pillarH + flicker, 14, pillarH);
+      atkPose = getPoseAt(
+        [
+          { t: 0.0, pose: POSE_STAND },
+          { t: 0.15, pose: POSE_FIGHT },
+          { t: 0.28, pose: POSE_CROUCH },
+          { t: 0.42, pose: { ...POSE_LEAP, xOffset: atkFacing * 80 } },
+          { t: 0.55, pose: { ...POSE_SLAM, xOffset: atkFacing * 160 } },
+          {
+            t: 0.75,
+            pose: { ...POSE_SLAM, xOffset: atkFacing * 160, yOffset: 0 },
+          },
+        ],
+        t,
+      );
+      vicPose = getPoseAt(
+        [
+          { t: 0.0, pose: VPOSE_STAND },
+          { t: 0.52, pose: VPOSE_STAND },
+          { t: 0.58, pose: VPOSE_STAGGER },
+          { t: 0.68, pose: { ...VPOSE_FLY_UP, xOffset: vicFacing * -40 } },
+          { t: 0.85, pose: { ...VPOSE_CRUMPLE, xOffset: vicFacing * -80 } },
+        ],
+        t,
+      );
+      if (t > 0.54 && t < 0.82) {
+        const impactT = (t - 0.54) / 0.28;
+        const impX = vicBaseX + (atkFacing > 0 ? -40 : 40);
+        for (let ring = 0; ring < 3; ring++) {
+          const ringT = Math.max(0, impactT - ring * 0.18);
+          if (ringT <= 0) continue;
+          const rr = ringT * 90;
+          const ra = (1 - ringT) * 0.8;
+          ctx.strokeStyle =
+            ring === 0
+              ? `rgba(255,100,0,${ra})`
+              : `rgba(255,200,0,${ra * 0.6})`;
+          ctx.lineWidth = ring === 0 ? 5 : 3;
+          ctx.shadowColor = "#ff6000";
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(impX, feetY - 30, rr, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
       }
-      // Shockwave ring
-      if (fireT > 0.3) {
-        const ringR = ((fireT - 0.3) / 0.7) * 200;
-        ctx.strokeStyle = `rgba(255,100,0,${1 - (fireT - 0.3) / 0.7})`;
-        ctx.lineWidth = 6;
-        ctx.shadowColor = "#ff6000";
-        ctx.shadowBlur = 20;
-        ctx.beginPath();
-        ctx.arc(vx, vy - 35, ringR, 0, Math.PI * 2);
-        ctx.stroke();
+      if (t > 0.3 && t < 0.6) {
+        const sparkT = (t - 0.3) / 0.3;
+        for (let s = 0; s < 8; s++) {
+          const sx =
+            atkBaseX +
+            atkFacing * (sparkT * 140 - s * 20) +
+            Math.sin(tick * 12 + s) * 6;
+          const sy = feetY - 80 - s * 8 + Math.cos(tick * 10 + s) * 5;
+          ctx.globalAlpha = (1 - s / 8) * 0.7;
+          ctx.fillStyle = s % 2 === 0 ? "#ff6020" : "#ffcc00";
+          ctx.shadowColor = "#ff6020";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 4 * (1 - s / 10), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
       }
       break;
     }
-
     case "ice": {
-      // Crystal shatter effect
-      const iceT = Math.max(0, (t - 0.1) / 0.85);
-      // Ice encasing
-      if (iceT < 0.6) {
-        const encaseAlpha = Math.min(1, iceT / 0.3) * 0.75;
-        ctx.globalAlpha = encaseAlpha;
-        ctx.fillStyle = "#a0e8ff";
+      atkPose = getPoseAt(
+        [
+          { t: 0.0, pose: POSE_STAND },
+          { t: 0.18, pose: POSE_FIGHT },
+          { t: 0.4, pose: { ...POSE_ICE_EXTEND, xOffset: atkFacing * 30 } },
+          { t: 0.65, pose: { ...POSE_ICE_EXTEND, xOffset: atkFacing * 30 } },
+          { t: 0.8, pose: POSE_FIGHT },
+        ],
+        t,
+      );
+      const vicStiffness = Math.max(0, Math.min(1, (t - 0.25) / 0.25));
+      vicPose = lerpPose(VPOSE_STAND, VPOSE_FROZEN, vicStiffness);
+      if (t > 0.3 && t < 0.62) {
+        const encaseA = Math.min(1, (t - 0.3) / 0.2) * 0.65;
+        ctx.globalAlpha = encaseA;
+        const iceGrad = ctx.createLinearGradient(
+          vicBaseX - 24,
+          feetY - 85,
+          vicBaseX + 24,
+          feetY,
+        );
+        iceGrad.addColorStop(0, "rgba(160,230,255,0.9)");
+        iceGrad.addColorStop(1, "rgba(60,180,255,0.6)");
+        ctx.fillStyle = iceGrad;
         ctx.shadowColor = "#00aaff";
         ctx.shadowBlur = 20;
         ctx.beginPath();
-        ctx.roundRect(vx - 22, vy - 75, 44, 78, 4);
+        ctx.roundRect(vicBaseX - 24, feetY - 88, 48, 90, 4);
         ctx.fill();
+        ctx.strokeStyle = "rgba(220,245,255,0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 4;
+        for (let c = 0; c < 4; c++) {
+          const cx2 = vicBaseX + (c % 2 === 0 ? -8 : 10);
+          const cy2 = feetY - 20 - c * 18;
+          ctx.beginPath();
+          ctx.moveTo(cx2, cy2);
+          ctx.lineTo(cx2 + 12, cy2 - 8);
+          ctx.lineTo(cx2 + 18, cy2 - 4);
+          ctx.stroke();
+        }
         ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
       }
-      // Shatter shards
-      if (iceT > 0.55) {
-        const shatterT = (iceT - 0.55) / 0.45;
-        for (let i = 0; i < 12; i++) {
-          const angle = (i / 12) * Math.PI * 2;
-          const dist = shatterT * 120;
-          const sx = vx + Math.cos(angle) * dist;
-          const sy = vy - 35 + Math.sin(angle) * dist * 0.6;
-          ctx.globalAlpha = (1 - shatterT) * 0.9;
-          ctx.fillStyle = "#c0f0ff";
+      if (t > 0.62) {
+        vicAlpha = 0;
+        const shatterT = (t - 0.62) / 0.38;
+        for (let i = 0; i < 14; i++) {
+          const angle = (i / 14) * Math.PI * 2;
+          const dist = shatterT * 130;
+          const sx = vicBaseX + Math.cos(angle) * dist;
+          const sy = feetY - 44 + Math.sin(angle) * dist * 0.55;
+          const sa = (1 - shatterT) * 0.9;
+          ctx.globalAlpha = sa;
+          ctx.fillStyle =
+            i % 3 === 0 ? "#c0f0ff" : i % 3 === 1 ? "#80d8ff" : "#ffffff";
           ctx.shadowColor = "#00ccff";
           ctx.shadowBlur = 8;
           ctx.save();
           ctx.translate(sx, sy);
-          ctx.rotate(angle + shatterT * 3);
-          ctx.fillRect(-6, -2, 12, 4);
+          ctx.rotate(angle + shatterT * 4);
+          ctx.fillRect(-7, -2, 14, 4);
           ctx.restore();
         }
         ctx.globalAlpha = 1;
@@ -891,271 +1374,755 @@ function drawFinisherOverlay(
       }
       break;
     }
-
     case "lightning": {
-      // Lightning storm from above
-      const ltT = Math.max(0, (t - 0.05) / 0.9);
-      const bolts = 3;
-      for (let b = 0; b < bolts; b++) {
-        const bPhase = (ltT * bolts - b) % 1;
-        if (bPhase > 0 && bPhase < 0.5) {
-          const bAlpha =
-            bPhase < 0.25 ? bPhase / 0.25 : 1 - (bPhase - 0.25) / 0.25;
-          ctx.globalAlpha = bAlpha;
+      atkPose = getPoseAt(
+        [
+          { t: 0.0, pose: POSE_STAND },
+          { t: 0.18, pose: POSE_FIGHT },
+          { t: 0.38, pose: POSE_ARMS_UP },
+          { t: 0.6, pose: POSE_ARMS_UP },
+          { t: 0.75, pose: POSE_FIGHT },
+        ],
+        t,
+      );
+      const jitter = t > 0.35 && t < 0.65 ? Math.sin(tick * 40) * 8 : 0;
+      vicPose = getPoseAt(
+        [
+          { t: 0.0, pose: VPOSE_STAND },
+          { t: 0.35, pose: VPOSE_STAND },
+          { t: 0.45, pose: { ...VPOSE_STAND, xOffset: jitter } },
+          { t: 0.62, pose: VPOSE_STAGGER },
+          { t: 0.75, pose: { ...VPOSE_FLY_BACK, xOffset: vicFacing * -90 } },
+        ],
+        t,
+      );
+      if (t > 0.35 && t < 0.72) {
+        const ltA = Math.sin(tick * 30) * 0.5 + 0.6;
+        ctx.globalAlpha = ltA;
+        const handX = atkBaseX + atkFacing * 20;
+        const handY = feetY - 145;
+        for (let b = 0; b < 2; b++) {
           ctx.strokeStyle = b === 0 ? "#ffffff" : "#ffff44";
           ctx.lineWidth = b === 0 ? 5 : 2;
           ctx.shadowColor = "#ffff00";
           ctx.shadowBlur = 20;
           ctx.beginPath();
-          let lx = vx + (b - 1) * 20;
-          ctx.moveTo(lx, barH);
-          for (let seg = 0; seg < 8; seg++) {
-            lx += (Math.random() - 0.5) * 30;
-            ctx.lineTo(lx, barH + (seg + 1) * ((vy - barH - 35) / 8));
+          let lx = handX + b * 12;
+          ctx.moveTo(lx, handY);
+          for (let s = 1; s <= 8; s++) {
+            lx += (Math.sin(tick * 73 + s * 13 + b * 7) - 0.5) * 28;
+            ctx.lineTo(lx, handY + (s / 8) * (feetY - 50 - handY));
           }
-          ctx.lineTo(vx + (b - 1) * 15, vy - 35);
+          ctx.lineTo(vicBaseX + Math.sin(tick * 53) * 12, feetY - 50);
           ctx.stroke();
-          ctx.shadowBlur = 0;
         }
-      }
-      ctx.globalAlpha = 1;
-      // Impact flash
-      if (ltT > 0.5) {
-        const flashA = Math.sin(((ltT - 0.5) / 0.5) * Math.PI) * 0.6;
-        ctx.fillStyle = `rgba(255,255,180,${flashA})`;
-        ctx.fillRect(0, barH, CANVAS_W, CANVAS_H - barH * 2);
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
       }
       break;
     }
-
     case "shadow": {
-      // Dark shadow slash
-      const shT = Math.max(0, (t - 0.1) / 0.85);
-      // Dark tendrils
-      for (let i = 0; i < 6; i++) {
-        const angle = (i / 6) * Math.PI * 2 + tick * 2;
-        const len = shT * 80;
-        ctx.globalAlpha = shT * 0.7;
-        ctx.strokeStyle = "#660099";
-        ctx.lineWidth = 3;
-        ctx.shadowColor = "#aa00ff";
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.moveTo(vx, vy - 35);
-        ctx.lineTo(
-          vx + Math.cos(angle) * len,
-          vy - 35 + Math.sin(angle) * len * 0.6,
+      if (t < 0.28) {
+        atkAlpha = Math.max(0, 1 - (t - 0.12) / 0.16);
+        atkPose = getPoseAt(
+          [
+            { t: 0.0, pose: POSE_STAND },
+            { t: 0.12, pose: POSE_FIGHT },
+          ],
+          t,
         );
-        ctx.stroke();
+        vicPose = VPOSE_STAND;
+      } else if (t < 0.56) {
+        shadowFlipped = true;
+        atkAlpha = Math.min(1, (t - 0.28) / 0.1);
+        atkPose = getPoseAt(
+          [
+            { t: 0.28, pose: { ...POSE_FIGHT, xOffset: vicFacing * -20 } },
+            {
+              t: 0.42,
+              pose: {
+                ...POSE_PUNCH,
+                bodyLean: -0.35,
+                xOffset: vicFacing * -20,
+              },
+            },
+            {
+              t: 0.56,
+              pose: {
+                ...POSE_PUNCH,
+                bodyLean: -0.35,
+                xOffset: vicFacing * -20,
+              },
+            },
+          ],
+          t,
+        );
+        vicPose = getPoseAt(
+          [
+            { t: 0.28, pose: VPOSE_STAND },
+            { t: 0.48, pose: VPOSE_STAGGER },
+            { t: 0.56, pose: { ...VPOSE_STAGGER, xOffset: atkFacing * 15 } },
+          ],
+          t,
+        );
+        if (t > 0.4 && t < 0.64) {
+          const slashA = Math.sin(((t - 0.4) / 0.24) * Math.PI);
+          ctx.globalAlpha = slashA * 0.85;
+          ctx.strokeStyle = "#cc44ff";
+          ctx.lineWidth = 5;
+          ctx.shadowColor = "#cc00ff";
+          ctx.shadowBlur = 14;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(vicBaseX - 38, feetY - 78);
+          ctx.lineTo(vicBaseX + 38, feetY - 8);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(vicBaseX - 22, feetY - 90);
+          ctx.lineTo(vicBaseX + 22, feetY - 18);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+        }
+        const tndA = Math.min(1, (t - 0.28) / 0.2) * 0.5;
+        ctx.globalAlpha = tndA;
+        for (let i = 0; i < 5; i++) {
+          const angle = (i / 5) * Math.PI * 2 + tick * 2.5;
+          ctx.strokeStyle = "#6600aa";
+          ctx.lineWidth = 2;
+          ctx.shadowColor = "#9900ff";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(vicBaseX, feetY - 40);
+          ctx.quadraticCurveTo(
+            vicBaseX + Math.cos(angle) * 40,
+            feetY - 40 + Math.sin(angle) * 35,
+            vicBaseX + Math.cos(angle) * 75,
+            feetY - 40 + Math.sin(angle) * 60,
+          );
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      } else {
+        shadowFlipped = true;
+        atkPose = { ...POSE_FIGHT, xOffset: vicFacing * -20 };
+        vicPose = getPoseAt(
+          [
+            { t: 0.56, pose: VPOSE_STAGGER },
+            { t: 0.75, pose: { ...VPOSE_FLY_BACK, xOffset: atkFacing * 60 } },
+          ],
+          t,
+        );
       }
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-      // Slash mark
-      if (shT > 0.35) {
-        const slashT = (shT - 0.35) / 0.65;
-        const slashAlpha =
-          slashT < 0.5 ? slashT / 0.5 : 1 - (slashT - 0.5) / 0.5;
-        ctx.globalAlpha = slashAlpha;
-        ctx.strokeStyle = "#cc44ff";
-        ctx.lineWidth = 6;
-        ctx.shadowColor = "#cc00ff";
-        ctx.shadowBlur = 16;
-        const facing = attacker.pos.x < victim.pos.x ? 1 : -1;
-        ctx.beginPath();
-        ctx.moveTo(vx - facing * 50, vy - 70);
-        ctx.lineTo(vx + facing * 50, vy - 5);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(vx - facing * 30, vy - 80);
-        ctx.lineTo(vx + facing * 30, vy - 10);
-        ctx.stroke();
+      break;
+    }
+    case "earth": {
+      atkPose = getPoseAt(
+        [
+          { t: 0.0, pose: POSE_STAND },
+          { t: 0.2, pose: POSE_FIGHT },
+          { t: 0.35, pose: POSE_CROUCH },
+          { t: 0.52, pose: { ...POSE_SLAM, xOffset: atkFacing * 100 } },
+          { t: 0.72, pose: { ...POSE_SLAM, xOffset: atkFacing * 80 } },
+        ],
+        t,
+      );
+      vicPose = getPoseAt(
+        [
+          { t: 0.0, pose: VPOSE_STAND },
+          { t: 0.5, pose: VPOSE_STAND },
+          { t: 0.58, pose: VPOSE_STAGGER },
+          { t: 0.72, pose: { ...VPOSE_FLY_UP, xOffset: 0 } },
+          { t: 0.9, pose: { ...VPOSE_CRUMPLE, xOffset: vicFacing * -40 } },
+        ],
+        t,
+      );
+      if (t > 0.5 && t < 0.85) {
+        const crackT = (t - 0.5) / 0.35;
+        ctx.globalAlpha = (1 - crackT) * 0.9;
+        ctx.strokeStyle = "#cc8844";
+        ctx.lineWidth = 3;
+        ctx.shadowColor = "#ff8800";
+        ctx.shadowBlur = 10;
+        for (let c = 0; c < 5; c++) {
+          const angle = (c / 5) * Math.PI + Math.sin(c * 1.4) * 0.4;
+          const len = 30 + c * 15;
+          ctx.beginPath();
+          ctx.moveTo(vicBaseX, feetY);
+          ctx.lineTo(
+            vicBaseX + Math.cos(angle) * len,
+            feetY + Math.sin(angle) * len * 0.4,
+          );
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      }
+      break;
+    }
+    case "energy": {
+      atkPose = getPoseAt(
+        [
+          { t: 0.0, pose: POSE_STAND },
+          { t: 0.18, pose: POSE_FIGHT },
+          { t: 0.38, pose: { ...POSE_PUNCH, xOffset: atkFacing * 20 } },
+          { t: 0.62, pose: { ...POSE_SLAM, xOffset: atkFacing * 80 } },
+          { t: 0.8, pose: POSE_FIGHT },
+        ],
+        t,
+      );
+      vicPose = getPoseAt(
+        [
+          { t: 0.0, pose: VPOSE_STAND },
+          { t: 0.55, pose: VPOSE_STAND },
+          { t: 0.62, pose: VPOSE_STAGGER },
+          { t: 0.78, pose: { ...VPOSE_FLY_BACK, xOffset: vicFacing * -110 } },
+        ],
+        t,
+      );
+      if (t > 0.3 && t < 0.68) {
+        const beamT = (t - 0.3) / 0.38;
+        const beamA = Math.sin(beamT * Math.PI) * 0.9;
+        ctx.globalAlpha = beamA;
+        const bw =
+          (beamT < 0.5 ? beamT * 2 : 1) * Math.abs(vicBaseX - atkBaseX);
+        ctx.fillStyle = "#44aaff";
+        ctx.shadowColor = "#0088ff";
+        ctx.shadowBlur = 25;
+        ctx.fillRect(
+          atkFacing > 0 ? atkBaseX : atkBaseX - bw,
+          feetY - 110,
+          bw / 3,
+          18,
+        );
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
       break;
     }
-
-    case "earth": {
-      // Ground shatter
-      const eT = Math.max(0, (t - 0.05) / 0.9);
-      // Crack lines on ground
-      const crackAlpha = Math.min(1, eT / 0.3);
-      ctx.globalAlpha = crackAlpha;
-      ctx.strokeStyle = "#ff8800";
-      ctx.lineWidth = 3;
-      ctx.shadowColor = "#ff6600";
-      ctx.shadowBlur = 8;
-      for (let c = 0; c < 5; c++) {
-        const angle = (c / 5) * Math.PI - Math.PI / 2 + 0.3;
-        const crackLen = eT * 150;
-        ctx.beginPath();
-        ctx.moveTo(vx, vy);
-        ctx.lineTo(
-          vx + Math.cos(angle) * crackLen,
-          vy + Math.sin(angle) * crackLen * 0.3,
-        );
-        ctx.stroke();
-      }
-      ctx.shadowBlur = 0;
-      // Rock chunks flying
-      if (eT > 0.2) {
-        const rockT = (eT - 0.2) / 0.8;
-        for (let r = 0; r < 8; r++) {
-          const rAngle = (r / 8) * Math.PI * 2;
-          const rDist = rockT * 100;
-          const rx = vx + Math.cos(rAngle) * rDist;
-          const ry = vy + Math.sin(rAngle) * rDist * 0.5 - rockT * 40;
-          ctx.globalAlpha = (1 - rockT) * crackAlpha;
-          ctx.fillStyle = "#a06030";
-          ctx.fillRect(rx - 5, ry - 4, 10, 8);
-        }
-      }
-      ctx.globalAlpha = 1;
-      break;
-    }
-
-    case "energy": {
-      // Laser beam / energy column
-      const enT = Math.max(0, (t - 0.08) / 0.85);
-      const beamAlpha = enT < 0.2 ? enT / 0.2 : enT > 0.8 ? (1 - enT) / 0.2 : 1;
-      const beamFacing = ax < vx ? 1 : -1;
-      const beamStart = ax + beamFacing * 30;
-      const beamEnd = vx;
-      const beamW = beamAlpha * 18;
-      ctx.globalAlpha = beamAlpha * 0.9;
-      const beamGrad = ctx.createLinearGradient(beamStart, 0, beamEnd, 0);
-      beamGrad.addColorStop(0, atkColor);
-      beamGrad.addColorStop(1, "#ffffff");
-      ctx.fillStyle = beamGrad;
-      ctx.shadowColor = atkColor;
-      ctx.shadowBlur = 30;
-      ctx.fillRect(
-        Math.min(beamStart, beamEnd),
-        vy - 40 - beamW / 2,
-        Math.abs(beamEnd - beamStart),
-        beamW,
-      );
-      ctx.shadowBlur = 0;
-      // Impact at victim
-      const impactR = enT * 60;
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 3;
-      ctx.shadowColor = atkColor;
-      ctx.shadowBlur = 20;
-      ctx.beginPath();
-      ctx.arc(vx, vy - 35, impactR, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      break;
-    }
-
     case "drain": {
-      // Soul extraction
-      const drT = Math.max(0, (t - 0.1) / 0.85);
-      // Floating soul orbs moving from victim to attacker
-      for (let s = 0; s < 6; s++) {
-        const sPhase = (drT + s / 6) % 1;
-        if (sPhase < 0.8) {
-          const sx = vx + (ax - vx) * (sPhase / 0.8);
-          const sy = vy - 35 - Math.sin(sPhase * Math.PI) * 60;
-          const sAlpha =
-            sPhase < 0.1
-              ? sPhase / 0.1
-              : sPhase > 0.7
-                ? (0.8 - sPhase) / 0.1
-                : 1;
-          ctx.globalAlpha = sAlpha * 0.9;
-          ctx.fillStyle = "#ff40aa";
+      atkPose = getPoseAt(
+        [
+          { t: 0.0, pose: POSE_STAND },
+          { t: 0.18, pose: { ...POSE_ICE_EXTEND, xOffset: atkFacing * 50 } },
+          { t: 0.65, pose: { ...POSE_ICE_EXTEND, xOffset: atkFacing * 50 } },
+          { t: 0.8, pose: { ...POSE_FIGHT, xOffset: atkFacing * 30 } },
+        ],
+        t,
+      );
+      vicPose = lerpPose(
+        VPOSE_STAND,
+        VPOSE_COLLAPSE,
+        t > 0.65 ? Math.min(1, (t - 0.65) / 0.2) : 0,
+      );
+      const drainProgress = t > 0.18 ? Math.min(1, (t - 0.18) / 0.48) : 0;
+      if (t > 0.16 && t < 0.8) {
+        const tendA = Math.min(1, (t - 0.16) / 0.15);
+        const atkHandX = atkBaseX + atkFacing * 50;
+        for (let s = 0; s < 5; s++) {
+          const phase = (t * 2.5 + s / 5) % 1;
+          if (phase > 0.85) continue;
+          const px = vicBaseX + (atkHandX - vicBaseX) * phase;
+          const py = feetY - 50 - Math.sin(phase * Math.PI) * (50 + s * 8);
+          const sa = (1 - phase) * tendA * 0.9;
+          const prevPhase = Math.max(0, phase - 0.08);
+          const ppx = vicBaseX + (atkHandX - vicBaseX) * prevPhase;
+          const ppy = feetY - 50 - Math.sin(prevPhase * Math.PI) * (50 + s * 8);
+          ctx.globalAlpha = sa;
+          ctx.strokeStyle = s % 2 === 0 ? "#ff40aa" : "#dd20cc";
+          ctx.lineWidth = 2.5;
           ctx.shadowColor = "#ff00aa";
-          ctx.shadowBlur = 16;
+          ctx.shadowBlur = 10;
           ctx.beginPath();
-          ctx.arc(sx, sy, 8 * (1 - sPhase * 0.3), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
+          ctx.moveTo(ppx, ppy);
+          ctx.quadraticCurveTo(
+            (ppx + px) / 2 + Math.sin(tick * 8 + s) * 12,
+            (ppy + py) / 2,
+            px,
+            py,
+          );
+          ctx.stroke();
         }
-      }
-      ctx.globalAlpha = 1;
-      break;
-    }
-
-    case "wind": {
-      // Vortex spiral
-      const wT = Math.max(0, (t - 0.05) / 0.9);
-      ctx.globalAlpha = wT * 0.85;
-      for (let ring = 0; ring < 4; ring++) {
-        const rPhase = (wT * 2 + ring * 0.25) % 1;
-        const rRadius = rPhase * 120;
-        const rAlpha = rPhase < 0.5 ? rPhase / 0.5 : (1 - rPhase) / 0.5;
-        ctx.globalAlpha = rAlpha * 0.7;
-        ctx.strokeStyle = "#88ccff";
-        ctx.lineWidth = 4;
-        ctx.shadowColor = "#4488ff";
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(vx, vy - 35, rRadius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
-      ctx.globalAlpha = 1;
-      break;
-    }
-
-    default: {
-      // Slash: dramatic X mark
-      const slT = Math.max(0, (t - 0.1) / 0.85);
-      if (slT > 0.2) {
-        const xAlpha =
-          slT < 0.4 ? (slT - 0.2) / 0.2 : slT > 0.8 ? (1 - slT) / 0.2 : 1;
-        ctx.globalAlpha = xAlpha;
-        ctx.strokeStyle = atkColor;
-        ctx.lineWidth = 8;
+        ctx.globalAlpha = drainProgress * 0.4;
+        ctx.fillStyle = atkColor;
         ctx.shadowColor = atkColor;
         ctx.shadowBlur = 20;
-        ctx.lineCap = "round";
         ctx.beginPath();
-        ctx.moveTo(vx - 40, vy - 70);
-        ctx.lineTo(vx + 40, vy);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(vx + 40, vy - 70);
-        ctx.lineTo(vx - 40, vy);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        ctx.arc(
+          atkBaseX + atkFacing * 30,
+          feetY - 80,
+          8 + drainProgress * 14,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
         ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
       }
+      break;
+    }
+    default: {
+      const spinPoses = [
+        { t: 0.0, pose: POSE_STAND },
+        { t: 0.18, pose: POSE_FIGHT },
+        { t: 0.28, pose: POSE_SPIN_A },
+        { t: 0.36, pose: POSE_SPIN_B },
+        { t: 0.44, pose: POSE_SPIN_C },
+        { t: 0.52, pose: { ...POSE_SPIN_A, xOffset: atkFacing * 60 } },
+        { t: 0.6, pose: { ...POSE_PUNCH, xOffset: atkFacing * 120 } },
+        { t: 0.8, pose: { ...POSE_FIGHT, xOffset: atkFacing * 80 } },
+      ];
+      atkPose = getPoseAt(spinPoses, t);
+      const hit1 = t > 0.35 && t < 0.55;
+      const hit2 = t > 0.52 && t < 0.68;
+      const bounce =
+        (hit1 ? Math.sin(((t - 0.35) / 0.2) * Math.PI * 2) * 18 : 0) +
+        (hit2 ? Math.sin(((t - 0.52) / 0.16) * Math.PI * 2) * 12 : 0);
+      vicPose = getPoseAt(
+        [
+          { t: 0.0, pose: VPOSE_STAND },
+          { t: 0.34, pose: VPOSE_STAND },
+          { t: 0.42, pose: { ...VPOSE_STAGGER, yOffset: 8 } },
+          { t: 0.52, pose: { ...VPOSE_STAGGER, xOffset: vicFacing * -20 } },
+          { t: 0.62, pose: { ...VPOSE_STAGGER, xOffset: vicFacing * -40 } },
+          { t: 0.78, pose: { ...VPOSE_FLY_BACK, xOffset: vicFacing * -80 } },
+        ],
+        t,
+      );
+      vicPose = { ...vicPose, yOffset: vicPose.yOffset + bounce };
+      if (t > 0.32 && t < 0.72) {
+        const hitSpots = [
+          { tx: 0.35, ty: 0.48 },
+          { tx: 0.5, ty: 0.62 },
+        ];
+        for (const spot of hitSpots) {
+          const st = (t - spot.tx) / (spot.ty - spot.tx);
+          if (st < 0 || st > 1) continue;
+          const sa = Math.sin(st * Math.PI);
+          const sr = st * 42;
+          ctx.globalAlpha = sa * 0.9;
+          ctx.strokeStyle = atkColor;
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = atkColor;
+          ctx.shadowBlur = 12;
+          for (let ray = 0; ray < 8; ray++) {
+            const ra = (ray / 8) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(
+              vicBaseX + Math.cos(ra) * sr * 0.3,
+              feetY - 45 + Math.sin(ra) * sr * 0.3,
+            );
+            ctx.lineTo(
+              vicBaseX + Math.cos(ra) * sr,
+              feetY - 45 + Math.sin(ra) * sr,
+            );
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+        }
+      }
+      break;
     }
   }
 
   ctx.restore();
 
-  // ── FINISHER text ────────────────────────────────────────────────────────
-  if (t > 0.05 && t < 0.45) {
-    const txtAlpha =
-      t < 0.15 ? (t - 0.05) / 0.1 : t > 0.35 ? (0.45 - t) / 0.1 : 1;
+  // Phase 2: Charge-up energy aura (t 0.15–0.45)
+  if (t > 0.15 && t < 0.45) {
+    const auraA =
+      Math.min(1, (t - 0.15) / 0.1) * (t > 0.38 ? (0.45 - t) / 0.07 : 1);
+    const atkAuraX = atkBaseX + atkPose.xOffset;
+    const atkAuraY = feetY - 55 + atkPose.yOffset;
+    const numSpikes = 12;
+    for (let i = 0; i < numSpikes; i++) {
+      const angle = (i / numSpikes) * Math.PI * 2 + tick * 3;
+      const spikeLen = 22 + Math.sin(i * 2.3 + tick * 4) * 16;
+      const wobble = Math.sin(i * 1.7 + tick * 7) * 0.22;
+      const outerX = atkAuraX + Math.cos(angle + wobble) * spikeLen;
+      const outerY = atkAuraY + Math.sin(angle + wobble) * spikeLen * 0.75;
+      const midAngle = angle + wobble + 0.2;
+      const midX = atkAuraX + Math.cos(midAngle) * spikeLen * 0.55;
+      const midY = atkAuraY + Math.sin(midAngle) * spikeLen * 0.55 * 0.75;
+      ctx.save();
+      ctx.globalAlpha = auraA * (0.6 + Math.sin(tick * 8 + i) * 0.3);
+      ctx.strokeStyle = atkColor;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = atkColor;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(atkAuraX, atkAuraY);
+      ctx.lineTo(midX, midY);
+      ctx.lineTo(outerX, outerY);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.8)";
+      ctx.lineWidth = 1;
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(atkAuraX, atkAuraY);
+      ctx.lineTo(outerX * 0.6 + atkAuraX * 0.4, outerY * 0.6 + atkAuraY * 0.4);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Foot dust
+    for (let p = 0; p < 5; p++) {
+      const px = atkBaseX + atkPose.xOffset + Math.sin(p * 2.1 + tick * 3) * 22;
+      const py = feetY + Math.cos(p * 1.6 + tick * 2) * 5;
+      const pa = auraA * (0.3 + Math.sin(tick * 5 + p) * 0.2) * (1 - p / 5);
+      ctx.save();
+      ctx.globalAlpha = pa;
+      ctx.fillStyle = "#cccccc";
+      ctx.beginPath();
+      ctx.arc(px, py, 4 + p * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Phase 3: Manga close-up panel (t 0.38–0.55)
+  if (t > 0.38 && t < 0.55) {
+    const panelA =
+      Math.min(1, (t - 0.38) / 0.06) * (t > 0.5 ? (0.55 - t) / 0.05 : 1);
+    const panelX = attackerOnLeft ? 8 : CANVAS_W - 208;
+    const panelY = 65;
+    const panelW = 200;
+    const panelH = 135;
+
     ctx.save();
-    ctx.globalAlpha = txtAlpha;
+    ctx.globalAlpha = panelA;
+
+    // Panel bg
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    const headCX = panelX + panelW / 2;
+    const headCY = panelY + panelH / 2 + 8;
+
+    // Aura spikes inside panel
+    for (let i = 0; i < 14; i++) {
+      const angle = (i / 14) * Math.PI * 2;
+      const len = 48 + Math.sin(i * 2.3) * 20;
+      ctx.globalAlpha = panelA * 0.45;
+      ctx.strokeStyle = atkColor;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = atkColor;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(headCX + Math.cos(angle) * 20, headCY + Math.sin(angle) * 20);
+      ctx.lineTo(
+        headCX + Math.cos(angle) * len,
+        headCY + Math.sin(angle) * len * 0.7,
+      );
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = panelA;
+
+    // Head
+    ctx.strokeStyle = atkColor;
+    ctx.fillStyle = "#1a1a1a";
+    ctx.lineWidth = 3;
+    ctx.shadowColor = atkColor;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(headCX, headCY, 32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Eyes
+    for (let eye = -1; eye <= 1; eye += 2) {
+      const ex = headCX + eye * 11;
+      const ey = headCY - 4;
+      ctx.strokeStyle = atkColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(ex, ey, 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000000";
+      ctx.beginPath();
+      ctx.arc(ex + eye * 1.5, ey + 1, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(ex + eye * 1, ey - 1.5, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Brows
+    ctx.strokeStyle = atkColor;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(headCX - 16, headCY - 14);
+    ctx.lineTo(headCX - 6, headCY - 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(headCX + 16, headCY - 14);
+    ctx.lineTo(headCX + 6, headCY - 10);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // FINISHER label
+    ctx.save();
+    ctx.globalAlpha = panelA;
     ctx.textAlign = "center";
-    ctx.shadowColor = "#ff2200";
-    ctx.shadowBlur = 30;
-    ctx.fillStyle = "#ff2200";
-    ctx.font = "bold 68px 'Bricolage Grotesque', sans-serif";
-    ctx.fillText("FINISH HIM!", CANVAS_W / 2, CANVAS_H / 2 + 10);
+    ctx.font = "bold italic 22px 'Bricolage Grotesque', sans-serif";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#000000";
+    ctx.strokeText("FINISHER", CANVAS_W / 2, 52);
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = atkColor;
+    ctx.shadowBlur = 18;
+    ctx.fillText("FINISHER", CANVAS_W / 2, 52);
     ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // ── Ability name label ───────────────────────────────────────────────────
-  if (t > 0.25 && t < 0.75) {
-    const lblAlpha =
-      t < 0.35 ? (t - 0.25) / 0.1 : t > 0.65 ? (0.75 - t) / 0.1 : 1;
+  // Phase 4: Rush speed lines (t 0.52–0.65)
+  if (t > 0.52 && t < 0.65) {
+    const rushA =
+      Math.min(1, (t - 0.52) / 0.05) * (t > 0.6 ? (0.65 - t) / 0.05 : 1);
+    const rushAtkX = atkBaseX + atkPose.xOffset;
+    const rushAtkY = feetY - 60 + atkPose.yOffset;
     ctx.save();
-    ctx.globalAlpha = lblAlpha * 0.8;
+    for (let i = 0; i < 36; i++) {
+      const angle =
+        Math.atan2(impactY - rushAtkY, impactX - rushAtkX) +
+        (Math.sin(i * 1.3) - 0.5) * 0.55;
+      const len = 140 + Math.sin(i * 2.1) * 60;
+      ctx.globalAlpha = rushA * (0.3 + Math.sin(i * 1.7) * 0.2);
+      ctx.strokeStyle = i % 3 === 0 ? "#ffffff" : atkColor;
+      ctx.lineWidth = i % 4 === 0 ? 2 : 1;
+      ctx.beginPath();
+      ctx.moveTo(rushAtkX, rushAtkY);
+      ctx.lineTo(
+        rushAtkX + Math.cos(angle) * len,
+        rushAtkY + Math.sin(angle) * len,
+      );
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Motion ghosts
+    for (let g = 1; g <= 3; g++) {
+      const ghostAlpha = rushA * [0.25, 0.12, 0.05][g - 1];
+      const ghostX = atkBaseX + atkPose.xOffset - atkFacing * g * 18;
+      drawStickFigurePose(
+        ctx,
+        ghostX,
+        feetY,
+        atkColor,
+        atkPose,
+        attacker.customization.hat,
+        atkFacing,
+        ghostAlpha,
+      );
+    }
+  }
+
+  // Phase 5: IMPACT FRAMES (t 0.62–0.72)
+  if (t > 0.62 && t < 0.72) {
+    const subT = (t - 0.62) / 0.1;
+
+    if (subT < 0.25) {
+      // White flash - black silhouettes
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      drawStickFigurePose(
+        ctx,
+        vicBaseX + vicPose.xOffset,
+        feetY,
+        "#000000",
+        { ...vicPose, xOffset: 0 },
+        victim.customization.hat,
+        vicFacing,
+        1,
+      );
+      const sAtkX2 = shadowFlipped ? vicBaseX + vicFacing * -60 : atkBaseX;
+      drawStickFigurePose(
+        ctx,
+        sAtkX2 + atkPose.xOffset,
+        feetY,
+        "#000000",
+        { ...atkPose, xOffset: 0 },
+        attacker.customization.hat,
+        shadowFlipped ? -atkFacing : atkFacing,
+        1,
+      );
+    } else if (subT < 0.5) {
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    } else if (subT < 0.75) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+
+    // Radial impact lines
+    const flashAlpha = subT < 0.5 ? 1.0 : Math.max(0, (0.75 - subT) / 0.25);
+    ctx.save();
+    ctx.translate(impactX, impactY);
+    for (let i = 0; i < 60; i++) {
+      const angle = (i / 60) * Math.PI * 2;
+      const dist = 160 + Math.sin(i * 1.7) * 80;
+      ctx.globalAlpha = flashAlpha * (0.5 + Math.sin(i * 2.3) * 0.4);
+      ctx.strokeStyle =
+        i % 4 === 0
+          ? "#ffffff"
+          : i % 4 === 1
+            ? atkColor
+            : i % 4 === 2
+              ? "#ffffff"
+              : vicColor;
+      ctx.lineWidth = i % 5 === 0 ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(angle) * dist, Math.sin(angle) * dist);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // Impact word - skewed
+    const wordA = subT < 0.3 ? subT / 0.3 : subT > 0.8 ? (1 - subT) / 0.2 : 1;
+    ctx.save();
+    ctx.globalAlpha = wordA;
+    ctx.setTransform(1, -0.3, 0.1, 1, impactX, impactY - 30);
+    ctx.textAlign = "center";
+    ctx.font = "bold italic 62px 'Bricolage Grotesque', sans-serif";
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#000000";
+    ctx.strokeText(impactWord, 0, 0);
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = atkColor;
+    ctx.shadowBlur = 22;
+    ctx.fillText(impactWord, 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Screen shake (t 0.62–0.78) + figure draw
+  ctx.save();
+  if (t > 0.62 && t < 0.78) {
+    const shakeT = (t - 0.62) / 0.16;
+    const shakeAmt = (1 - shakeT) * 12;
+    ctx.translate(
+      Math.sin(tick * 60) * shakeAmt,
+      Math.cos(tick * 55) * shakeAmt * 0.6,
+    );
+  }
+
+  // Draw figures (skip during white flash sub-frames)
+  if (!(t > 0.62 && t < 0.645)) {
+    let actualAtkX = atkBaseX;
+    let actualAtkFacing = atkFacing;
+    if (shadowFlipped) {
+      actualAtkX = vicBaseX + vicFacing * -60;
+      actualAtkFacing = -atkFacing;
+    }
+    drawStickFigurePose(
+      ctx,
+      vicBaseX,
+      feetY,
+      vicColor,
+      vicPose,
+      victim.customization.hat,
+      vicFacing,
+      vicAlpha,
+    );
+    drawStickFigurePose(
+      ctx,
+      actualAtkX,
+      feetY,
+      atkColor,
+      atkPose,
+      attacker.customization.hat,
+      actualAtkFacing,
+      atkAlpha,
+    );
+  }
+
+  ctx.restore();
+
+  // Phase 6: Aftermath debris + dust (t 0.72–1.0)
+  if (t > 0.72) {
+    const aftT = (t - 0.72) / 0.28;
+    // Debris chunks
+    for (let d = 0; d < 7; d++) {
+      const angle = (d / 7) * Math.PI * 2 + d * 0.4;
+      const speed = 90 + d * 28;
+      const dx = impactX + Math.cos(angle) * aftT * speed;
+      const dy = impactY + Math.sin(angle) * aftT * speed + aftT * aftT * 60;
+      const dAlpha = (1 - aftT) * 0.85;
+      const dSize = 6 + d * 2;
+      ctx.save();
+      ctx.globalAlpha = dAlpha;
+      ctx.fillStyle =
+        d % 3 === 0 ? "#888888" : d % 3 === 1 ? "#aaaaaa" : "#666666";
+      ctx.translate(dx, dy);
+      ctx.rotate(d * 0.9 + aftT * 4);
+      ctx.beginPath();
+      ctx.moveTo(0, -dSize);
+      ctx.lineTo(dSize * 0.7, -dSize * 0.2);
+      ctx.lineTo(dSize * 0.5, dSize * 0.8);
+      ctx.lineTo(-dSize * 0.4, dSize);
+      ctx.lineTo(-dSize * 0.8, dSize * 0.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    // Dust clouds
+    for (let dc = 0; dc < 4; dc++) {
+      const dcX = impactX + (dc - 1.5) * 45;
+      const dcY = feetY - 10 - aftT * 35;
+      const dcR = (15 + dc * 12) * Math.min(1, aftT * 3);
+      const dcA = (1 - aftT) * 0.5 * (0.5 + dc * 0.12);
+      ctx.save();
+      ctx.globalAlpha = dcA;
+      ctx.fillStyle = dc % 2 === 0 ? "#cccccc" : "#ffffff";
+      ctx.beginPath();
+      ctx.arc(dcX, dcY, dcR, 0, Math.PI * 2);
+      ctx.fill();
+      for (let b = 0; b < 3; b++) {
+        const bAngle = (b / 3) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(
+          dcX + Math.cos(bAngle) * dcR * 0.6,
+          dcY + Math.sin(bAngle) * dcR * 0.5,
+          dcR * 0.45,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // Cinematic letterbox bars
+  const barH = t < 0.12 ? (t / 0.12) * 60 : 60;
+  ctx.fillStyle = "rgba(0,0,0,0.97)";
+  ctx.fillRect(0, 0, CANVAS_W, barH);
+  ctx.fillRect(0, CANVAS_H - barH, CANVAS_W, barH);
+
+  // Ability name label
+  if (t > 0.05 && t < 0.7) {
+    const lblA = t < 0.15 ? (t - 0.05) / 0.1 : t > 0.6 ? (0.7 - t) / 0.1 : 1;
+    ctx.save();
+    ctx.globalAlpha = lblA * 0.75;
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
     ctx.shadowColor = atkColor;
     ctx.shadowBlur = 12;
-    ctx.font = "bold 18px 'Figtree', sans-serif";
+    ctx.font = "bold 16px 'Figtree', sans-serif";
     const abilityLabel = ability
       .replace(/([A-Z])/g, " $1")
       .toUpperCase()
@@ -1163,23 +2130,56 @@ function drawFinisherOverlay(
     ctx.fillText(
       `${abilityLabel} FINISHER`,
       CANVAS_W / 2,
-      CANVAS_H - barH - 16,
+      CANVAS_H - barH + 20,
     );
     ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // ── Final ELIMINATED text ────────────────────────────────────────────────
-  if (t > 0.75) {
-    const eAlpha = (t - 0.75) / 0.25;
+  // FINISH HIM! (phases 1-2)
+  if (t > 0.04 && t < 0.38) {
+    const txtA = t < 0.12 ? (t - 0.04) / 0.08 : t > 0.28 ? (0.38 - t) / 0.1 : 1;
     ctx.save();
-    ctx.globalAlpha = eAlpha;
+    ctx.globalAlpha = txtA;
     ctx.textAlign = "center";
-    ctx.shadowColor = atkColor;
-    ctx.shadowBlur = 40;
-    ctx.fillStyle = atkColor;
-    ctx.font = "bold 72px 'Bricolage Grotesque', sans-serif";
-    ctx.fillText("ELIMINATED", CANVAS_W / 2, CANVAS_H / 2 + 10);
+    ctx.font = "bold italic 60px 'Bricolage Grotesque', sans-serif";
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#880000";
+    ctx.strokeText("FINISH HIM!", CANVAS_W / 2, barH + 36);
+    ctx.fillStyle = "#ff2200";
+    ctx.shadowColor = "#ff0000";
+    ctx.shadowBlur = 35;
+    ctx.fillText("FINISH HIM!", CANVAS_W / 2, barH + 36);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // ELIMINATED (t 0.78–1.0)
+  if (t > 0.78) {
+    const eRaw = (t - 0.78) / 0.1;
+    const eScale =
+      eRaw < 1
+        ? eRaw < 0.5
+          ? 2.0 - eRaw * 2.2
+          : 0.9 + (eRaw - 0.5) * 0.2
+        : 1.0;
+    const eA = Math.min(1, eRaw * 1.5);
+    ctx.save();
+    ctx.globalAlpha = eA;
+    ctx.translate(CANVAS_W / 2, CANVAS_H / 2 + 12);
+    ctx.scale(Math.max(0.1, eScale), Math.max(0.1, eScale));
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillRect(-180, -40, 360, 55);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 56px 'Bricolage Grotesque', sans-serif";
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "#880000";
+    ctx.strokeText("ELIMINATED", 0, 0);
+    ctx.fillStyle = "#ff2200";
+    ctx.shadowColor = "#ff0000";
+    ctx.shadowBlur = 30;
+    ctx.fillText("ELIMINATED", 0, 0);
     ctx.shadowBlur = 0;
     ctx.restore();
   }
