@@ -924,6 +924,196 @@ function drawStatusEffects(
   }
 }
 
+function drawCharacterSkin(
+  ctx: CanvasRenderingContext2D,
+  skin: string,
+  cx: number,
+  headY: number,
+  shoulderY: number,
+  hipY: number,
+  feet: number,
+  bodyBob: number,
+  facing: number,
+  HEAD_R: number,
+) {
+  if (skin === "none") return;
+  ctx.save();
+
+  if (skin === "squidPlayer") {
+    // Green tracksuit - fill body rectangle
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#2d8a3e";
+    ctx.strokeStyle = "#1a5c28";
+    ctx.lineWidth = 1.5;
+    // Torso
+    ctx.beginPath();
+    ctx.roundRect(cx - 10, shoulderY + bodyBob, 20, hipY - shoulderY, 4);
+    ctx.fill();
+    ctx.stroke();
+    // Number badge (white square on chest)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(cx - 5, shoulderY + bodyBob + 6, 10, 8);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 6px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("456", cx, shoulderY + bodyBob + 13);
+    // Legs
+    ctx.fillStyle = "#2d8a3e";
+    ctx.strokeStyle = "#1a5c28";
+    ctx.beginPath();
+    ctx.roundRect(cx - 9, hipY + bodyBob, 8, feet - hipY - bodyBob, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(cx + 1, hipY + bodyBob, 8, feet - hipY - bodyBob, 3);
+    ctx.fill();
+    ctx.stroke();
+  } else if (skin === "squidGuard") {
+    // Pink suit
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#e8729a";
+    ctx.strokeStyle = "#c04070";
+    ctx.lineWidth = 1.5;
+    // Torso
+    ctx.beginPath();
+    ctx.roundRect(cx - 11, shoulderY + bodyBob, 22, hipY - shoulderY, 4);
+    ctx.fill();
+    ctx.stroke();
+    // Legs
+    ctx.fillStyle = "#e8729a";
+    ctx.strokeStyle = "#c04070";
+    ctx.beginPath();
+    ctx.roundRect(cx - 10, hipY + bodyBob, 9, feet - hipY - bodyBob, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(cx + 1, hipY + bodyBob, 9, feet - hipY - bodyBob, 3);
+    ctx.fill();
+    ctx.stroke();
+    // Black circle mask over head
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "#111111";
+    ctx.beginPath();
+    ctx.arc(cx, headY + bodyBob, HEAD_R + 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Circle symbol on mask
+    ctx.strokeStyle = "#ff6699";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, headY + bodyBob, HEAD_R * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    // Gun (held at arm level)
+    const gunY = (shoulderY + hipY) / 2 + bodyBob - 5;
+    const gunX = cx + facing * 14;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "#333333";
+    ctx.strokeStyle = "#555555";
+    ctx.lineWidth = 2;
+    // Barrel
+    ctx.beginPath();
+    ctx.rect(gunX, gunY - 3, facing * 18, 6);
+    ctx.fill();
+    ctx.stroke();
+    // Handle
+    ctx.beginPath();
+    ctx.rect(gunX + facing * 4, gunY + 3, facing * 6, 8);
+    ctx.fill();
+    ctx.stroke();
+  } else if (skin === "squidDoll") {
+    // White dress
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#f0e8d0";
+    ctx.strokeStyle = "#c8b888";
+    ctx.lineWidth = 1.5;
+    // Dress (wider trapezoid)
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, shoulderY + bodyBob);
+    ctx.lineTo(cx + 10, shoulderY + bodyBob);
+    ctx.lineTo(cx + 16, hipY + bodyBob + 8);
+    ctx.lineTo(cx - 16, hipY + bodyBob + 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Red collar
+    ctx.fillStyle = "#cc2200";
+    ctx.beginPath();
+    ctx.ellipse(cx, shoulderY + bodyBob + 3, 9, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Red bow/ribbon detail on head
+    ctx.fillStyle = "#cc2200";
+    ctx.beginPath();
+    ctx.ellipse(
+      cx - 8,
+      headY + bodyBob - HEAD_R + 2,
+      6,
+      4,
+      -0.5,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(
+      cx + 8,
+      headY + bodyBob - HEAD_R + 2,
+      6,
+      4,
+      0.5,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.fillStyle = "#ff3300";
+    ctx.beginPath();
+    ctx.arc(cx, headY + bodyBob - HEAD_R + 2, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Creepy red triangle on face
+    ctx.fillStyle = "#cc2200";
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(cx, headY + bodyBob - 6);
+    ctx.lineTo(cx - 6, headY + bodyBob + 4);
+    ctx.lineTo(cx + 6, headY + bodyBob + 4);
+    ctx.closePath();
+    ctx.fill();
+    // Wide creepy eyes
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.ellipse(
+      cx - 5 + facing * 2,
+      headY + bodyBob - 3,
+      3,
+      2.5,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(
+      cx + 5 + facing * 2,
+      headY + bodyBob - 3,
+      3,
+      2.5,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    // White highlight in eyes
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(cx - 4 + facing * 2, headY + bodyBob - 4, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 6 + facing * 2, headY + bodyBob - 4, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 function drawStickFigure(
   ctx: CanvasRenderingContext2D,
   player: Player,
@@ -1043,6 +1233,18 @@ function drawStickFigure(
   ctx.stroke();
 
   ctx.shadowBlur = 0;
+  drawCharacterSkin(
+    ctx,
+    customization.character ?? "none",
+    cx,
+    headY,
+    shoulderY,
+    hipY,
+    feet,
+    bodyBob,
+    facing,
+    HEAD_R,
+  );
   drawHat(ctx, cx, headY + bodyBob - HEAD_R, customization.hat, color, facing);
   ctx.globalAlpha = 1;
 
@@ -1070,7 +1272,28 @@ function drawProjectiles(
     ctx.fillStyle = proj.color;
     ctx.beginPath();
 
-    if (proj.type === "frost") {
+    if (proj.type === "bullet") {
+      // Draw a small elongated bullet
+      ctx.save();
+      ctx.translate(proj.x, proj.y);
+      const angle = Math.atan2(proj.vy, proj.vx);
+      ctx.rotate(angle);
+      ctx.fillStyle = "#ffee44";
+      ctx.strokeStyle = "#aa8800";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 7, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // Tracer
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = "#ff8800";
+      ctx.beginPath();
+      ctx.ellipse(-10, 0, 10, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    } else if (proj.type === "frost") {
       ctx.save();
       ctx.translate(proj.x, proj.y);
       ctx.rotate(tick * 4);

@@ -1031,6 +1031,41 @@ function applyControls(
             );
           }
           break;
+
+        case "guardGun":
+          // Fire a fast bullet projectile straight ahead
+          projectiles.push({
+            x: np.pos.x + np.facing * 24,
+            y: np.pos.y - PLAYER_H * 0.6,
+            vx: np.facing * 18,
+            vy: 0,
+            owner: np.id,
+            timer: 1.2,
+            active: true,
+            color: "#ffcc00",
+            type: "bullet",
+          });
+          // Second bullet slightly offset
+          projectiles.push({
+            x: np.pos.x + np.facing * 24,
+            y: np.pos.y - PLAYER_H * 0.6,
+            vx: np.facing * 18,
+            vy: -1,
+            owner: np.id,
+            timer: 1.2,
+            active: true,
+            color: "#ffcc00",
+            type: "bullet",
+          });
+          spawnParticles(
+            particles,
+            np.pos.x + np.facing * 30,
+            np.pos.y - PLAYER_H * 0.6,
+            "#ffee88",
+            8,
+            4,
+          );
+          break;
       }
     }
 
@@ -1510,6 +1545,18 @@ function updateProjectiles(
             vel: { x: np.vx * 0.5, y: -8 },
           };
           spawnParticles(particles, np.x, np.y, "#ff8800", 20, 7);
+        } else if (np.type === "bullet") {
+          const newHp = Math.max(0, t.hp - 20);
+          updatedTarget = {
+            ...t,
+            hp: newHp,
+            animState: newHp <= 0 ? "dead" : "hurt",
+            animTimer: 0.25,
+            isInvincible: true,
+            invincibleTimer: 0.3,
+            vel: { x: np.vx * 0.15, y: -3 },
+          };
+          spawnParticles(particles, np.x, np.y, "#ffcc00", 8, 3);
         } else {
           const newHp = Math.max(0, t.hp - 18);
           updatedTarget = {

@@ -209,6 +209,11 @@ const ABILITY_INFO: Record<
     label: "Meteor Strike",
     desc: "40 dmg if enemy is center",
   },
+  guardGun: {
+    emoji: "🔫",
+    label: "Guard Gun",
+    desc: "Fire fast bullets like a Squid Game guard",
+  },
 };
 
 type BoxType = "clothes" | "ability";

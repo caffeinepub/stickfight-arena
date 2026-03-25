@@ -357,6 +357,47 @@ export default function MenuScreen({ onStart, onCheats }: MenuScreenProps) {
           >
             A R E N A
           </motion.h2>
+          <motion.div
+            className="flex items-center gap-2 mt-3 flex-wrap justify-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <motion.span
+              className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider"
+              style={{
+                background: "linear-gradient(135deg, #cc0000, #ff3366)",
+                color: "#ffffff",
+                boxShadow:
+                  "0 0 16px rgba(255,51,102,0.7), 0 0 32px rgba(255,51,102,0.3)",
+                border: "1px solid rgba(255,100,130,0.5)",
+                letterSpacing: "0.12em",
+              }}
+              animate={{
+                boxShadow: [
+                  "0 0 16px rgba(255,51,102,0.7), 0 0 32px rgba(255,51,102,0.3)",
+                  "0 0 28px rgba(255,51,102,1), 0 0 56px rgba(255,51,102,0.5)",
+                  "0 0 16px rgba(255,51,102,0.7), 0 0 32px rgba(255,51,102,0.3)",
+                ],
+              }}
+              transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY }}
+            >
+              🦑 Squid Game Update!!!!!
+            </motion.span>
+            <motion.span
+              className="px-2 py-1 rounded-full text-xs font-bold uppercase"
+              style={{
+                background: "rgba(255,200,0,0.15)",
+                color: "#ffcc00",
+                border: "1px solid rgba(255,200,0,0.4)",
+                letterSpacing: "0.08em",
+              }}
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 0.8, repeat: Number.POSITIVE_INFINITY }}
+            >
+              ⏰ Limited Time
+            </motion.span>
+          </motion.div>
         </motion.div>
 
         {/* Ability icons */}

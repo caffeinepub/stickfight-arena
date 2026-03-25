@@ -34,11 +34,13 @@ const DEFAULT_P1: PlayerCustomization = {
   color: "red",
   hat: "none",
   special: "dash",
+  character: "none",
 };
 const DEFAULT_P2: PlayerCustomization = {
   color: "blue",
   hat: "crown",
   special: "energyBlast",
+  character: "none",
 };
 
 const initialUnlocked = loadUnlocked();

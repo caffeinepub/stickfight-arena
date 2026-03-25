@@ -9,7 +9,7 @@ import {
 } from "@/game/lootbox";
 import type { Hat, SpecialAbility } from "@/game/types";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 interface CheatCodeScreenProps {
   onClose: () => void;
@@ -40,7 +40,6 @@ export default function CheatCodeScreen({
     type: "success" | "error";
     message: string;
   } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleActivate = () => {
     const normalized = code.trim().toUpperCase();
@@ -58,7 +57,7 @@ export default function CheatCodeScreen({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -66,7 +65,7 @@ export default function CheatCodeScreen({
     >
       {/* Matrix-style scanlines */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="fixed inset-0 pointer-events-none"
         style={{
           backgroundImage:
             "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(64,200,96,0.025) 2px, rgba(64,200,96,0.025) 4px)",
@@ -74,7 +73,7 @@ export default function CheatCodeScreen({
       />
 
       <motion.div
-        className="relative w-full max-w-md mx-4 rounded-xl overflow-hidden"
+        className="relative w-full max-w-md mx-4 my-8 rounded-xl overflow-hidden"
         initial={{ scale: 0.85, y: 40 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.85, y: 40 }}
@@ -134,7 +133,6 @@ export default function CheatCodeScreen({
           >
             <Input
               data-ocid="cheats.input"
-              ref={inputRef}
               value={code}
               onChange={(e) => {
                 setCode(e.target.value);
@@ -142,14 +140,20 @@ export default function CheatCodeScreen({
               }}
               onKeyDown={(e) => e.key === "Enter" && handleActivate()}
               placeholder="TYPE CODE HERE..."
-              className="h-12 text-center text-lg font-mono font-bold tracking-widest uppercase"
+              className="h-14 text-center text-lg font-mono font-bold tracking-widest uppercase"
               style={{
                 background: "rgba(0,0,0,0.6)",
                 border: "1.5px solid rgba(64,200,96,0.4)",
                 color: "#40cc60",
                 caretColor: "#40cc60",
+                fontSize: "1.1rem",
               }}
-              autoFocus
+              inputMode="text"
+              enterKeyHint="go"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
             />
           </motion.div>
 
@@ -194,7 +198,7 @@ export default function CheatCodeScreen({
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Button
                 data-ocid="cheats.submit_button"
-                className="w-full h-12 text-base font-black tracking-widest relative overflow-hidden"
+                className="w-full h-14 text-base font-black tracking-widest relative overflow-hidden"
                 style={{
                   background: "rgba(64,200,96,0.12)",
                   border: "1.5px solid #40cc60",
@@ -223,7 +227,7 @@ export default function CheatCodeScreen({
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Button
                 data-ocid="cheats.close_button"
-                className="w-full h-10 text-sm font-bold tracking-wide"
+                className="w-full h-12 text-sm font-bold tracking-wide"
                 style={{
                   background: "rgba(216,195,138,0.06)",
                   border: "1px solid rgba(216,195,138,0.25)",

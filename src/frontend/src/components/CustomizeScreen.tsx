@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import type {
+  CharacterSkin,
   GameMode,
   Hat,
   PlayerColor,
@@ -369,6 +370,12 @@ const ALL_SPECIALS: {
     label: "Meteor Strike",
     desc: "40 damage if enemy is in center",
     emoji: "☄️",
+  },
+  {
+    id: "guardGun",
+    label: "Guard Gun 🦑",
+    desc: "Fire two fast bullets like a Squid Game guard",
+    emoji: "🔫",
   },
 ];
 
@@ -812,6 +819,37 @@ function StickPreview({ custom }: { custom: PlayerCustomization }) {
   );
 }
 
+const CHARACTER_SKINS: {
+  id: CharacterSkin;
+  label: string;
+  emoji: string;
+  desc: string;
+  squidGame?: boolean;
+}[] = [
+  { id: "none", label: "Default", emoji: "🥷", desc: "Standard stick fighter" },
+  {
+    id: "squidPlayer",
+    label: "Squid Player",
+    emoji: "🟢",
+    desc: "Green tracksuit contestant #456",
+    squidGame: true,
+  },
+  {
+    id: "squidGuard",
+    label: "Squid Guard",
+    emoji: "🔴",
+    desc: "Pink-suited guard with circle mask & gun",
+    squidGame: true,
+  },
+  {
+    id: "squidDoll",
+    label: "Squid Doll",
+    emoji: "🪆",
+    desc: "The creepy red-light green-light doll",
+    squidGame: true,
+  },
+];
+
 function PlayerCustomizer({
   playerId,
   isAI,
@@ -921,6 +959,69 @@ function PlayerCustomizer({
         </div>
       </div>
 
+      {/* Character Skin */}
+      <div>
+        <p
+          className="text-xs font-semibold mb-2 uppercase tracking-wider flex items-center gap-2"
+          style={{ color: "#ff4466" }}
+        >
+          <span>🦑</span> Character Skin
+          <span
+            className="text-xs font-bold px-1.5 py-0.5 rounded"
+            style={{
+              background: "rgba(255,68,102,0.2)",
+              color: "#ff4466",
+              border: "1px solid rgba(255,68,102,0.4)",
+              fontSize: "0.6rem",
+            }}
+          >
+            SQUID GAME
+          </span>
+        </p>
+        <div className="flex flex-col gap-1">
+          {CHARACTER_SKINS.map((sk) => (
+            <button
+              key={sk.id}
+              type="button"
+              data-ocid={`customize.p${playerId}_skin`}
+              onClick={() => onChange({ ...custom, character: sk.id })}
+              className="text-left px-2 py-1.5 rounded transition-all"
+              style={{
+                background:
+                  custom.character === sk.id
+                    ? "rgba(255,68,102,0.18)"
+                    : "rgba(255,255,255,0.04)",
+                border: `1px solid ${custom.character === sk.id ? "#ff4466" : sk.squidGame ? "rgba(255,68,102,0.3)" : "rgba(255,255,255,0.08)"}`,
+                cursor: "pointer",
+              }}
+            >
+              <span
+                className="text-xs font-bold"
+                style={{
+                  color: custom.character === sk.id ? "#ff4466" : "#ddd",
+                }}
+              >
+                {sk.emoji} {sk.label}
+                {sk.squidGame && (
+                  <span
+                    className="ml-2 text-xs"
+                    style={{ color: "#ff4466", fontSize: "0.6rem" }}
+                  >
+                    ⏰ LIMITED
+                  </span>
+                )}
+              </span>
+              <p
+                className="text-xs text-muted-foreground mt-0.5"
+                style={{ fontSize: "0.65rem" }}
+              >
+                {sk.desc}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Special */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
@@ -997,11 +1098,13 @@ export default function CustomizeScreen({
     color: "red",
     hat: "none",
     special: "dash",
+    character: "none",
   });
   const [p2, setP2] = useState<PlayerCustomization>({
     color: "blue",
     hat: "crown",
     special: "energyBlast",
+    character: "none",
   });
 
   return (

@@ -92,6 +92,7 @@ export const LOCKABLE_ABILITIES: SpecialAbility[] = [
   "powerSlam",
   "sonicBoom",
   "meteorStrike",
+  "guardGun",
 ];
 
 const LS_HATS = "sf_unlocked_hats";

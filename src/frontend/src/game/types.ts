@@ -40,6 +40,8 @@ export type Hat =
   | "deerstalker"
   | "laurel";
 
+export type CharacterSkin = "none" | "squidDoll" | "squidGuard" | "squidPlayer";
+
 export type SpecialAbility =
   | "dash"
   | "groundSlam"
@@ -89,7 +91,8 @@ export type SpecialAbility =
   | "lifesteal"
   | "powerSlam"
   | "sonicBoom"
-  | "meteorStrike";
+  | "meteorStrike"
+  | "guardGun";
 
 export type PlayerColor =
   | "red"
@@ -112,6 +115,7 @@ export interface PlayerCustomization {
   color: PlayerColor;
   hat: Hat;
   special: SpecialAbility;
+  character: CharacterSkin;
 }
 
 export interface Vec2 {
@@ -194,7 +198,8 @@ export interface Projectile {
     | "boomerang"
     | "grenade"
     | "sonic"
-    | "icicle";
+    | "icicle"
+    | "bullet";
   boomerangReturning?: boolean;
 }
 
