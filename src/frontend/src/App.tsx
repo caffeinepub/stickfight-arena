@@ -5,6 +5,7 @@ import LootBoxScreen from "@/components/LootBoxScreen";
 import MapBuilderScreen from "@/components/MapBuilderScreen";
 import MapSelectScreen from "@/components/MapSelectScreen";
 import MenuScreen from "@/components/MenuScreen";
+import PlatformSelectScreen from "@/components/PlatformSelectScreen";
 import { loadUnlocked, saveUnlocked } from "@/game/lootbox";
 import { DEFAULT_MAP } from "@/game/maps";
 import type {
@@ -18,6 +19,7 @@ import type {
 import { useState } from "react";
 
 type AppScreen =
+  | "platformSelect"
   | "menu"
   | "customize"
   | "mapSelect"
@@ -40,7 +42,8 @@ const DEFAULT_P2: PlayerCustomization = {
 const initialUnlocked = loadUnlocked();
 
 export default function App() {
-  const [screen, setScreen] = useState<AppScreen>("menu");
+  const [screen, setScreen] = useState<AppScreen>("platformSelect");
+  const [platformMode, setPlatformMode] = useState<"mobile" | "pc">("pc");
   const [mode, setMode] = useState<GameMode>("local");
   const [p1Custom, setP1Custom] = useState<PlayerCustomization>(DEFAULT_P1);
   const [p2Custom, setP2Custom] = useState<PlayerCustomization>(DEFAULT_P2);
@@ -59,12 +62,17 @@ export default function App() {
   const [selectedBgColor, setSelectedBgColor] = useState<string>(
     DEFAULT_MAP.bgColor,
   );
-  // Store customizations during map selection flow
   const [pendingP1, setPendingP1] = useState<PlayerCustomization>(DEFAULT_P1);
   const [pendingP2, setPendingP2] = useState<PlayerCustomization>(DEFAULT_P2);
 
+  const handlePlatformSelect = (selected: "mobile" | "pc") => {
+    setPlatformMode(selected);
+    setScreen("menu");
+  };
+
   const handleMenuStart = (selectedMode: GameMode) => {
-    setMode(selectedMode);
+    // On mobile, force AI mode (only one physical player on device)
+    setMode(platformMode === "mobile" ? "ai" : selectedMode);
     setScreen("customize");
   };
 
@@ -149,6 +157,9 @@ export default function App() {
 
   return (
     <>
+      {screen === "platformSelect" && (
+        <PlatformSelectScreen onSelect={handlePlatformSelect} />
+      )}
       {screen === "menu" && <MenuScreen onStart={handleMenuStart} />}
       {screen === "customize" && (
         <CustomizeScreen
@@ -177,6 +188,7 @@ export default function App() {
           <GameScreen
             key={gameKey}
             mode={mode}
+            platformMode={platformMode}
             p1Custom={p1Custom}
             p2Custom={p2Custom}
             initialP1Wins={p1Wins}

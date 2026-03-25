@@ -1,3 +1,4 @@
+import { playHit, playJump, playSpecial } from "./sounds";
 import type {
   Controls,
   GamePhase,
@@ -302,6 +303,7 @@ function applyControls(
 
     if (controls.jump && np.onGround) {
       np.vel.y = JUMP_FORCE;
+      playJump();
       np.onGround = false;
       np.animState = "jump";
     }
@@ -336,6 +338,7 @@ function applyControls(
 
     if (controls.special && np.specialCooldown <= 0) {
       np.specialCooldown = SPECIAL_COOLDOWN;
+      playSpecial();
       np.animState = "special";
       np.animTimer = 0.5;
       const color = PLAYER_COLOR_HEX[np.customization.color];
@@ -1106,6 +1109,7 @@ function checkAttackHit(
       8,
       4,
     );
+    playHit();
     return [newAttacker, newDefender];
   }
   return [attacker, defender];

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { playMenuClick } from "@/game/sounds";
 import type { GameMode } from "@/game/types";
 import { PLAYER_COLOR_HEX } from "@/game/types";
 import { motion, useAnimationFrame } from "motion/react";
@@ -423,7 +424,10 @@ export default function MenuScreen({ onStart }: MenuScreenProps) {
                 border: "1.5px solid #D8C38A",
                 color: "#D8C38A",
               }}
-              onClick={() => onStart("local")}
+              onClick={() => {
+                playMenuClick();
+                onStart("local");
+              }}
             >
               <motion.div
                 className="absolute inset-0 pointer-events-none"
@@ -451,7 +455,10 @@ export default function MenuScreen({ onStart }: MenuScreenProps) {
                 border: "1.5px solid #5080e0",
                 color: "#7090f0",
               }}
-              onClick={() => onStart("ai")}
+              onClick={() => {
+                playMenuClick();
+                onStart("ai");
+              }}
             >
               <motion.div
                 className="absolute inset-0 pointer-events-none"

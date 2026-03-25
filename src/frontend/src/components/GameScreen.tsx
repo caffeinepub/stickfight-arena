@@ -6,6 +6,7 @@ import {
   updateGame,
 } from "@/game/engine";
 import { renderFrame } from "@/game/renderer";
+import { playFinisher, playRoundEnd, playVictory } from "@/game/sounds";
 import type {
   Controls,
   GameMode,
@@ -17,9 +18,17 @@ import { PLAYER_COLOR_HEX } from "@/game/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CANVAS_H = 450;
+const JOYSTICK_RADIUS = 52;
+const INNER_RADIUS = 22;
+
+interface JoystickPos {
+  x: number;
+  y: number;
+}
 
 interface GameScreenProps {
   mode: GameMode;
+  platformMode?: "mobile" | "pc";
   p1Custom: PlayerCustomization;
   p2Custom: PlayerCustomization;
   initialP1Wins?: number;
@@ -33,6 +42,7 @@ interface GameScreenProps {
 
 export default function GameScreen({
   mode,
+  platformMode = "pc",
   p1Custom,
   p2Custom,
   initialP1Wins = 0,
@@ -62,11 +72,25 @@ export default function GameScreen({
   const gameOverCalledRef = useRef(false);
   const roundEndCalledRef = useRef(false);
 
+  // Mobile controls state
+  const mobileRef = useRef({
+    left: false,
+    right: false,
+    jump: false,
+    attack: false,
+    special: false,
+  });
+  const joystickOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const [joystickPos, setJoystickPos] = useState<JoystickPos>({ x: 0, y: 0 });
+
   // Reactive finisher availability for UI
   const [finisherAvailable, setFinisherAvailable] = useState<0 | 1 | 2>(0);
   const [finisherActive, setFinisherActive] = useState(false);
 
   const getP1Controls = useCallback((): Controls => {
+    if (platformMode === "mobile") {
+      return { ...mobileRef.current };
+    }
     const keys = keysRef.current;
     return {
       left: keys.has("a") || keys.has("A"),
@@ -75,7 +99,7 @@ export default function GameScreen({
       attack: keys.has("f") || keys.has("F"),
       special: keys.has("g") || keys.has("G"),
     };
-  }, []);
+  }, [platformMode]);
 
   const getP2Controls = useCallback((): Controls => {
     const keys = keysRef.current;
@@ -90,6 +114,7 @@ export default function GameScreen({
 
   const handleFinisher = useCallback((playerNum: 1 | 2) => {
     const newState = triggerFinisher(stateRef.current, playerNum);
+    playFinisher();
     stateRef.current = newState;
     setFinisherAvailable(0);
     setFinisherActive(true);
@@ -151,7 +176,6 @@ export default function GameScreen({
         dt,
       );
 
-      // Update React state for finisher UI (throttled to avoid too many re-renders)
       const fa = stateRef.current.finisherAvailable;
       const fActive = stateRef.current.finisherActive;
       setFinisherAvailable((prev) => (prev !== fa ? fa : prev));
@@ -163,6 +187,7 @@ export default function GameScreen({
         onRoundEnd
       ) {
         roundEndCalledRef.current = true;
+        playRoundEnd();
         const { roundWinner, p1Wins, p2Wins } = stateRef.current;
         onRoundEnd(roundWinner, p1Wins, p2Wins);
       }
@@ -174,6 +199,7 @@ export default function GameScreen({
       if (stateRef.current.phase === "gameOver" && !gameOverCalledRef.current) {
         gameOverCalledRef.current = true;
         onGameOver(stateRef.current.p1Wins, stateRef.current.p2Wins);
+        playVictory();
       }
 
       renderFrame(ctx, stateRef.current, tickRef.current);
@@ -182,11 +208,66 @@ export default function GameScreen({
 
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ─── Joystick handlers ───────────────────────────────────────────────
+  const handleJoystickStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    joystickOriginRef.current = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+    // Reset state
+    mobileRef.current.left = false;
+    mobileRef.current.right = false;
+    mobileRef.current.jump = false;
+    setJoystickPos({ x: 0, y: 0 });
+    // Process initial position
+    const dx = touch.clientX - joystickOriginRef.current.x;
+    const dy = touch.clientY - joystickOriginRef.current.y;
+    applyJoystick(dx, dy);
+  }, []);
+
+  const handleJoystickMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!joystickOriginRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - joystickOriginRef.current.x;
+    const dy = touch.clientY - joystickOriginRef.current.y;
+    applyJoystick(dx, dy);
+  }, []);
+
+  const handleJoystickEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    joystickOriginRef.current = null;
+    mobileRef.current.left = false;
+    mobileRef.current.right = false;
+    mobileRef.current.jump = false;
+    setJoystickPos({ x: 0, y: 0 });
+  }, []);
+
+  function applyJoystick(dx: number, dy: number) {
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const maxDist = JOYSTICK_RADIUS - INNER_RADIUS;
+    const clampedDist = Math.min(dist, maxDist);
+    const angle = Math.atan2(dy, dx);
+    const nx = clampedDist * Math.cos(angle);
+    const ny = clampedDist * Math.sin(angle);
+    setJoystickPos({ x: nx, y: ny });
+
+    // Dead zone: 25% of max dist
+    const threshold = maxDist * 0.25;
+    mobileRef.current.left = dx < -threshold;
+    mobileRef.current.right = dx > threshold;
+    // Jump if joystick angled significantly upward
+    mobileRef.current.jump = dy < -(maxDist * 0.4);
+  }
 
   const p1Color = PLAYER_COLOR_HEX[p1Custom.color];
   const p2Color = PLAYER_COLOR_HEX[p2Custom.color];
+  const isMobile = platformMode === "mobile";
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
@@ -210,10 +291,7 @@ export default function GameScreen({
           )}
           <div
             className="text-center font-black text-2xl tracking-widest"
-            style={{
-              color: "#ff2200",
-              textShadow: "0 0 16px #ff220088",
-            }}
+            style={{ color: "#ff2200", textShadow: "0 0 16px #ff220088" }}
           >
             FINISH HIM!
           </div>
@@ -235,23 +313,174 @@ export default function GameScreen({
         </div>
       )}
 
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_W}
-        height={CANVAS_H}
-        className="rounded-lg"
-        style={{
-          maxWidth: "100%",
-          boxShadow:
-            "0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(216,195,138,0.08)",
-        }}
-      />
+      {/* Canvas container */}
+      <div className="relative" style={{ maxWidth: "100%" }}>
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_W}
+          height={CANVAS_H}
+          className="rounded-lg block"
+          style={{
+            maxWidth: "100%",
+            boxShadow:
+              "0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(216,195,138,0.08)",
+          }}
+        />
 
-      {/* Controls reminder */}
-      <div className="flex gap-8 text-xs opacity-40 text-white font-mono">
-        <span>P1: WASD move · F attack · G special</span>
-        <span>P2: Arrows move · L attack · K special</span>
+        {/* Mobile touch overlay */}
+        {isMobile && (
+          <div
+            className="absolute inset-0 rounded-lg"
+            style={{ pointerEvents: "none" }}
+          >
+            {/* Left joystick zone */}
+            <div
+              className="absolute bottom-4 left-4"
+              style={{ pointerEvents: "auto" }}
+            >
+              {/* Outer ring */}
+              <div
+                onTouchStart={handleJoystickStart}
+                onTouchMove={handleJoystickMove}
+                onTouchEnd={handleJoystickEnd}
+                className="relative flex items-center justify-center select-none"
+                style={{
+                  width: JOYSTICK_RADIUS * 2,
+                  height: JOYSTICK_RADIUS * 2,
+                  borderRadius: "50%",
+                  background: "rgba(216,195,138,0.08)",
+                  border: "2px solid rgba(216,195,138,0.35)",
+                  touchAction: "none",
+                }}
+              >
+                {/* Inner dot */}
+                <div
+                  style={{
+                    position: "absolute",
+                    width: INNER_RADIUS * 2,
+                    height: INNER_RADIUS * 2,
+                    borderRadius: "50%",
+                    background: "rgba(216,195,138,0.55)",
+                    border: "2px solid rgba(216,195,138,0.8)",
+                    transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`,
+                    transition: joystickOriginRef.current
+                      ? "none"
+                      : "transform 0.15s ease",
+                    pointerEvents: "none",
+                  }}
+                />
+                {/* Directional hints */}
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    fontSize: 10,
+                    color: "rgba(216,195,138,0.4)",
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}
+                >
+                  ▲
+                </span>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 2,
+                    fontSize: 10,
+                    color: "rgba(216,195,138,0.4)",
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}
+                >
+                  ◀
+                </span>
+                <span
+                  style={{
+                    position: "absolute",
+                    right: 2,
+                    fontSize: 10,
+                    color: "rgba(216,195,138,0.4)",
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}
+                >
+                  ▶
+                </span>
+              </div>
+            </div>
+
+            {/* Right action buttons */}
+            <div
+              className="absolute bottom-4 right-4 flex flex-col gap-3"
+              style={{ pointerEvents: "auto" }}
+            >
+              {/* Special button */}
+              <button
+                type="button"
+                data-ocid="game.mobile_special_button"
+                className="flex items-center justify-center font-black text-sm uppercase tracking-widest select-none"
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(160,80,208,0.25)",
+                  border: "2px solid rgba(160,80,208,0.7)",
+                  color: "#c090ff",
+                  touchAction: "none",
+                  userSelect: "none",
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.special = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.special = false;
+                }}
+                onClick={(e) => e.preventDefault()}
+              >
+                SP
+              </button>
+
+              {/* Attack button */}
+              <button
+                type="button"
+                data-ocid="game.mobile_attack_button"
+                className="flex items-center justify-center font-black text-sm uppercase tracking-widest select-none"
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(224,60,60,0.25)",
+                  border: "2px solid rgba(224,60,60,0.7)",
+                  color: "#ff8080",
+                  touchAction: "none",
+                  userSelect: "none",
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.attack = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.attack = false;
+                }}
+                onClick={(e) => e.preventDefault()}
+              >
+                ATK
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Controls reminder — hidden on mobile */}
+      {!isMobile && (
+        <div className="flex gap-8 text-xs opacity-40 text-white font-mono">
+          <span>P1: WASD move · F attack · G special</span>
+          <span>P2: Arrows move · L attack · K special</span>
+        </div>
+      )}
     </div>
   );
 }

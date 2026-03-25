@@ -4,6 +4,7 @@ import {
   LOCKABLE_HATS,
   getRandomLocked,
 } from "@/game/lootbox";
+import { playLootBox } from "@/game/sounds";
 import type { Hat, SpecialAbility } from "@/game/types";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -248,6 +249,7 @@ export default function LootBoxScreen({
   const openBox = (type: BoxType) => {
     setChosenBox(type);
     setPhase("opening");
+    playLootBox();
     setTimeout(() => {
       if (type === "clothes") {
         const unlocked = getRandomLocked(
