@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 
 interface MenuScreenProps {
   onStart: (mode: GameMode) => void;
+  onCheats: () => void;
 }
 
 function FightingStick({
@@ -186,7 +187,7 @@ const ABILITY_ICONS = [
 
 import type React from "react";
 
-export default function MenuScreen({ onStart }: MenuScreenProps) {
+export default function MenuScreen({ onStart, onCheats }: MenuScreenProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
       {/* Deep background radial */}
@@ -475,6 +476,38 @@ export default function MenuScreen({ onStart }: MenuScreenProps) {
                 }}
               />
               🤖 vs AI
+            </Button>
+          </motion.div>
+
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <Button
+              data-ocid="menu.cheats_button"
+              className="w-full h-11 text-sm font-bold tracking-widest relative overflow-hidden"
+              style={{
+                background: "rgba(64,200,96,0.08)",
+                border: "1.5px solid #40cc60",
+                color: "#40cc60",
+              }}
+              onClick={() => {
+                playMenuClick();
+                onCheats();
+              }}
+            >
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, rgba(64,200,96,0.15), transparent)",
+                }}
+                animate={{ x: ["-100%", "200%"] }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "linear",
+                  delay: 0.5,
+                }}
+              />
+              💻 Cheats
             </Button>
           </motion.div>
         </motion.div>

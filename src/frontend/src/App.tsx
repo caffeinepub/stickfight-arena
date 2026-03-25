@@ -1,3 +1,4 @@
+import CheatCodeScreen from "@/components/CheatCodeScreen";
 import CustomizeScreen from "@/components/CustomizeScreen";
 import GameOverScreen from "@/components/GameOverScreen";
 import GameScreen from "@/components/GameScreen";
@@ -21,6 +22,7 @@ import { useState } from "react";
 type AppScreen =
   | "platformSelect"
   | "menu"
+  | "cheats"
   | "customize"
   | "mapSelect"
   | "mapBuilder"
@@ -71,7 +73,6 @@ export default function App() {
   };
 
   const handleMenuStart = (selectedMode: GameMode) => {
-    // On mobile, force AI mode (only one physical player on device)
     setMode(platformMode === "mobile" ? "ai" : selectedMode);
     setScreen("customize");
   };
@@ -160,7 +161,22 @@ export default function App() {
       {screen === "platformSelect" && (
         <PlatformSelectScreen onSelect={handlePlatformSelect} />
       )}
-      {screen === "menu" && <MenuScreen onStart={handleMenuStart} />}
+      {screen === "menu" && (
+        <MenuScreen
+          onStart={handleMenuStart}
+          onCheats={() => setScreen("cheats")}
+        />
+      )}
+      {screen === "cheats" && (
+        <CheatCodeScreen
+          onClose={() => setScreen("menu")}
+          onCheatActivated={(newHats, newAbilities) => {
+            setUnlockedHats(newHats);
+            setUnlockedAbilities(newAbilities);
+            setScreen("menu");
+          }}
+        />
+      )}
       {screen === "customize" && (
         <CustomizeScreen
           mode={mode}
