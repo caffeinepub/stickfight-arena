@@ -16,19 +16,22 @@ interface CheatCodeScreenProps {
   onCheatActivated: (newHats: Hat[], newAbilities: SpecialAbility[]) => void;
 }
 
+const unlockAll = () => {
+  const hats = [...BASE_HATS, ...LOCKABLE_HATS];
+  const abilities = [...BASE_ABILITIES, ...LOCKABLE_ABILITIES];
+  return {
+    hats,
+    abilities,
+    message: "All cosmetics and abilities unlocked!",
+  };
+};
+
 const CHEAT_CODES: Record<
   string,
   () => { hats: Hat[]; abilities: SpecialAbility[]; message: string }
 > = {
-  STICKGOD2026: () => {
-    const hats = [...BASE_HATS, ...LOCKABLE_HATS];
-    const abilities = [...BASE_ABILITIES, ...LOCKABLE_ABILITIES];
-    return {
-      hats,
-      abilities,
-      message: "All cosmetics and abilities unlocked!",
-    };
-  },
+  STICKGOD2026: unlockAll,
+  UNLOCKALL: unlockAll,
 };
 
 export default function CheatCodeScreen({
@@ -52,7 +55,7 @@ export default function CheatCodeScreen({
     if (cheat) {
       const { hats, abilities, message } = cheat();
       saveUnlocked(hats, abilities);
-      setResult({ type: "success", message: `2705 ${message}` });
+      setResult({ type: "success", message: `\u2705 ${message}` });
       onCheatActivated(hats, abilities);
     } else {
       setResult({ type: "error", message: "\u274C Invalid code" });
