@@ -1276,8 +1276,7 @@ function drawStickFigure(
 
   // Resolve positions -- all relative to facing, front = side character faces
   // shoulder position (top of body)
-  const shoulderY =
-    feet - UPPER_LEG - LOWER_LEG - BODY_LEN - NECK_LEN - HEAD_R * 2 + bodyBob;
+  const shoulderY = feet - UPPER_LEG - LOWER_LEG - BODY_LEN + bodyBob;
   const hipY = shoulderY + BODY_LEN;
 
   // Head sits right on top of neck which connects to shoulder
