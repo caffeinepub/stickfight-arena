@@ -1179,42 +1179,114 @@ function drawStickFigure(
   }
 
   const HEAD_R = 15;
-  const BODY_LEN = 42;
-  const ARM_LEN = 28;
-  const LEG_LEN = 32;
-  const headY = feet - BODY_LEN - HEAD_R * 1.3;
-  const shoulderY = headY + HEAD_R * 1.5;
-  const hipY = shoulderY + BODY_LEN;
-  const midBodyY = (shoulderY + hipY) / 2;
+  const NECK_LEN = 6;
+  const BODY_LEN = 38;
+  const UPPER_ARM = 16;
+  const LOWER_ARM = 14;
+  const UPPER_LEG = 18;
+  const LOWER_LEG = 16;
 
+  // Walk cycle uses smooth sine with slight ease
+  const walkPhase = tick * 10;
   let walkCycle = 0;
-  let armSwing = 0;
   let bodyBob = 0;
+  let bodyLean = 0;
+  // Front arm (same side as forward leg) and back arm angles from shoulder
+  // angle 0 = straight down, negative = forward/up
+  let frontArmAngle = -0.45; // resting: arms slightly forward/up
+  let backArmAngle = 0.35;
+  let frontLegAngle = 0;
+  let backLegAngle = 0;
+  // Elbow bend: positive means elbow bends backward (natural)
+  let frontElbowBend = 0.3;
+  let backElbowBend = 0.3;
+  // Knee bend
+  let frontKneeBend = 0.15;
+  let backKneeBend = 0.15;
 
   if (animState === "walk") {
-    walkCycle = Math.sin(tick * 12) * 18;
-    armSwing = Math.sin(tick * 12 + Math.PI) * 25;
-    bodyBob = Math.abs(Math.sin(tick * 12)) * -2;
+    walkCycle = Math.sin(walkPhase);
+    bodyBob = Math.abs(Math.sin(walkPhase)) * -2.5;
+    bodyLean = facing * 0.08;
+    // Legs swing oppositely
+    frontLegAngle = walkCycle * 0.45;
+    backLegAngle = -walkCycle * 0.45;
+    // Arms swing opposite to legs (natural gait)
+    frontArmAngle = -0.45 + walkCycle * 0.5;
+    backArmAngle = 0.35 - walkCycle * 0.5;
+    // Knees bend more during swing phase
+    frontKneeBend = 0.15 + Math.max(0, walkCycle) * 0.35;
+    backKneeBend = 0.15 + Math.max(0, -walkCycle) * 0.35;
   } else if (animState === "attack") {
-    armSwing = facing * 40;
+    frontArmAngle = -1.1; // punch forward/up
+    backArmAngle = 0.6;
+    frontElbowBend = 0.1;
+    backElbowBend = 0.5;
+    bodyLean = facing * 0.18;
     bodyBob = -3;
+    frontLegAngle = 0.15;
+    backLegAngle = -0.1;
   } else if (animState === "special") {
-    armSwing = facing * 50;
+    frontArmAngle = -1.4; // both arms raised
+    backArmAngle = -0.9;
+    frontElbowBend = 0.0;
+    backElbowBend = 0.2;
+    bodyLean = facing * 0.22;
     bodyBob = -5;
+    frontLegAngle = 0.2;
+    backLegAngle = -0.15;
   } else if (animState === "jump") {
-    walkCycle = -20;
-    armSwing = -30;
+    frontArmAngle = -1.2; // arms up
+    backArmAngle = -0.8;
+    frontElbowBend = 0.1;
+    backElbowBend = 0.2;
+    frontLegAngle = -0.25;
+    backLegAngle = 0.35;
+    frontKneeBend = 0.5;
+    backKneeBend = 0.3;
+    bodyBob = -4;
   } else if (animState === "hurt") {
-    bodyBob = 5;
+    frontArmAngle = 0.7;
+    backArmAngle = 0.5;
+    bodyLean = -facing * 0.2;
+    bodyBob = 4;
+    frontLegAngle = -0.15;
+    backLegAngle = 0.2;
   } else if (animState === "block") {
-    armSwing = -facing * 20;
+    frontArmAngle = -0.8; // guard up
+    backArmAngle = -0.6;
+    frontElbowBend = 0.7;
+    backElbowBend = 0.6;
+    bodyLean = facing * 0.05;
     bodyBob = -2;
   } else if (animState === "kick") {
-    walkCycle = 35;
-    armSwing = -20;
+    frontArmAngle = -0.5;
+    backArmAngle = 0.3;
+    bodyLean = facing * 0.15;
     bodyBob = -4;
+    frontLegAngle = 0.7; // kicking leg swings forward
+    backLegAngle = -0.2;
+    frontKneeBend = -0.2; // kick leg extends
+    backKneeBend = 0.3;
+  } else {
+    // idle: slight natural stance
+    frontLegAngle = 0.08;
+    backLegAngle = -0.08;
   }
 
+  // Resolve positions -- all relative to facing, front = side character faces
+  // shoulder position (top of body)
+  const shoulderY =
+    feet - UPPER_LEG - LOWER_LEG - BODY_LEN - NECK_LEN - HEAD_R * 2 + bodyBob;
+  const hipY = shoulderY + BODY_LEN;
+
+  // Head sits right on top of neck which connects to shoulder
+  const neckBaseX = cx + bodyLean * 10;
+  const neckBaseY = shoulderY;
+  const headCenterY = neckBaseY - NECK_LEN - HEAD_R;
+  const headCenterX = neckBaseX;
+
+  // ── Draw body (spine) ───────────────────────────────────────────────────────
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -1222,67 +1294,95 @@ function drawStickFigure(
   ctx.shadowColor = color;
   ctx.shadowBlur = player.frozen ? 0 : 6;
 
+  // Spine
   ctx.beginPath();
-  ctx.moveTo(cx, shoulderY + bodyBob);
-  ctx.lineTo(cx, hipY + bodyBob);
+  ctx.moveTo(neckBaseX, shoulderY);
+  ctx.lineTo(cx, hipY);
   ctx.stroke();
 
+  // Neck
+  ctx.beginPath();
+  ctx.moveTo(headCenterX, headCenterY + HEAD_R);
+  ctx.lineTo(neckBaseX, neckBaseY);
+  ctx.stroke();
+
+  // ── Head ────────────────────────────────────────────────────────────────────
   ctx.shadowBlur = player.frozen ? 0 : 10;
   ctx.beginPath();
-  ctx.arc(cx, headY + bodyBob, HEAD_R, 0, Math.PI * 2);
+  ctx.arc(headCenterX, headCenterY, HEAD_R, 0, Math.PI * 2);
   ctx.stroke();
 
   const eyeOffset = facing * 4;
   ctx.fillStyle = color;
   ctx.shadowBlur = 0;
   ctx.beginPath();
-  ctx.arc(cx + eyeOffset, headY + bodyBob - 3, 2, 0, Math.PI * 2);
+  ctx.arc(headCenterX + eyeOffset, headCenterY - 3, 2, 0, Math.PI * 2);
   ctx.fill();
 
+  // ── Arms from shoulders ─────────────────────────────────────────────────────
+  // front arm (facing direction)
+  // frontArmAngle: -PI/2 = straight up, 0 = straight down toward facing
+  // We rotate from shoulder: x += facing * sin(angle) * len, y += cos(angle) * len
   ctx.shadowBlur = 4;
-  if (animState === "attack" || animState === "special") {
-    ctx.beginPath();
-    ctx.moveTo(cx, midBodyY + bodyBob);
-    ctx.lineTo(
-      cx + facing * ARM_LEN * 0.8 + armSwing * 0.5,
-      midBodyY - 10 + bodyBob,
-    );
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx, midBodyY + bodyBob);
-    ctx.lineTo(
-      cx + facing * ARM_LEN * 0.6 + armSwing * 0.3,
-      midBodyY + 12 + bodyBob,
-    );
-    ctx.stroke();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(cx, midBodyY + bodyBob);
-    ctx.lineTo(
-      cx - facing * ARM_LEN * 0.5 - armSwing * 0.2,
-      midBodyY + 8 + bodyBob,
-    );
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx, midBodyY + bodyBob);
-    ctx.lineTo(
-      cx + facing * ARM_LEN * 0.5 + armSwing * 0.2,
-      midBodyY + 6 + bodyBob,
-    );
-    ctx.stroke();
-  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
 
-  const leftLegAngle = animState === "idle" ? 0.2 : (walkCycle * Math.PI) / 180;
-  const rightLegAngle =
-    animState === "idle" ? -0.2 : (-walkCycle * Math.PI) / 180;
+  const elbowFX =
+    neckBaseX + facing * Math.sin(frontArmAngle + Math.PI / 2) * UPPER_ARM;
+  const elbowFY = shoulderY + Math.cos(frontArmAngle + Math.PI / 2) * UPPER_ARM;
+  const handFX =
+    elbowFX +
+    facing * Math.sin(frontArmAngle + Math.PI / 2 - frontElbowBend) * LOWER_ARM;
+  const handFY =
+    elbowFY +
+    Math.cos(frontArmAngle + Math.PI / 2 - frontElbowBend) * LOWER_ARM;
 
   ctx.beginPath();
-  ctx.moveTo(cx, hipY + bodyBob);
-  ctx.lineTo(cx + Math.sin(leftLegAngle) * LEG_LEN, feet);
+  ctx.moveTo(neckBaseX, shoulderY);
+  ctx.lineTo(elbowFX, elbowFY);
+  ctx.lineTo(handFX, handFY);
   ctx.stroke();
+
+  const elbowBX =
+    neckBaseX - facing * Math.sin(-backArmAngle + Math.PI / 2) * UPPER_ARM;
+  const elbowBY = shoulderY + Math.cos(-backArmAngle + Math.PI / 2) * UPPER_ARM;
+  const handBX =
+    elbowBX -
+    facing * Math.sin(-backArmAngle + Math.PI / 2 - backElbowBend) * LOWER_ARM;
+  const handBY =
+    elbowBY + Math.cos(-backArmAngle + Math.PI / 2 - backElbowBend) * LOWER_ARM;
+
   ctx.beginPath();
-  ctx.moveTo(cx, hipY + bodyBob);
-  ctx.lineTo(cx + Math.sin(rightLegAngle) * LEG_LEN, feet);
+  ctx.moveTo(neckBaseX, shoulderY);
+  ctx.lineTo(elbowBX, elbowBY);
+  ctx.lineTo(handBX, handBY);
+  ctx.stroke();
+
+  // ── Legs with knee joints ──────────────────────────────────────────────────
+  // front leg
+  const kneeFX = cx + Math.sin(frontLegAngle) * UPPER_LEG * facing;
+  const kneeFY = hipY + Math.cos(frontLegAngle) * UPPER_LEG;
+  const footFX =
+    kneeFX + Math.sin(frontLegAngle - frontKneeBend) * LOWER_LEG * facing;
+  const footFY = kneeFY + Math.cos(frontLegAngle - frontKneeBend) * LOWER_LEG;
+
+  // back leg
+  const kneeBX = cx + Math.sin(backLegAngle) * UPPER_LEG * facing;
+  const kneeBY = hipY + Math.cos(backLegAngle) * UPPER_LEG;
+  const footBX =
+    kneeBX + Math.sin(backLegAngle - backKneeBend) * LOWER_LEG * facing;
+  const footBY = kneeBY + Math.cos(backLegAngle - backKneeBend) * LOWER_LEG;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, hipY);
+  ctx.lineTo(kneeFX, kneeFY);
+  ctx.lineTo(footFX, footFY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx, hipY);
+  ctx.lineTo(kneeBX, kneeBY);
+  ctx.lineTo(footBX, footBY);
   ctx.stroke();
 
   ctx.shadowBlur = 0;
@@ -1290,7 +1390,7 @@ function drawStickFigure(
     ctx,
     customization.character ?? "none",
     cx,
-    headY,
+    headCenterY,
     shoulderY,
     hipY,
     feet,
@@ -1298,10 +1398,18 @@ function drawStickFigure(
     facing,
     HEAD_R,
   );
-  drawHat(ctx, cx, headY + bodyBob - HEAD_R, customization.hat, color, facing);
+  drawHat(
+    ctx,
+    headCenterX,
+    headCenterY - HEAD_R,
+    customization.hat,
+    color,
+    facing,
+  );
   ctx.globalAlpha = 1;
 
   if (player.attackCooldown <= 0) {
+    const midBodyY = (shoulderY + hipY) / 2;
     ctx.strokeStyle = colorToRgba(color, 0.15);
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 5]);
@@ -1338,7 +1446,7 @@ function drawStickFigure(
     ctx.shadowBlur = 8;
     // Draw extended front leg
     ctx.beginPath();
-    ctx.moveTo(cx, hipY + bodyBob);
+    ctx.moveTo(cx, hipY);
     ctx.lineTo(cx + facing * 40, feet - 10);
     ctx.stroke();
     ctx.restore();
