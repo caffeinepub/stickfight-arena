@@ -1183,8 +1183,8 @@ function drawStickFigure(
   const BODY_LEN = 38;
   const UPPER_ARM = 16;
   const LOWER_ARM = 14;
-  const UPPER_LEG = 18;
-  const LOWER_LEG = 16;
+  const UPPER_LEG = 26;
+  const LOWER_LEG = 22;
 
   // Walk cycle uses smooth sine with slight ease
   const walkPhase = tick * 10;
@@ -1359,6 +1359,7 @@ function drawStickFigure(
   ctx.stroke();
 
   // ── Legs with knee joints ──────────────────────────────────────────────────
+  ctx.lineWidth = 4.5;
   // front leg
   const kneeFX = cx + Math.sin(frontLegAngle) * UPPER_LEG * facing;
   const kneeFY = hipY + Math.cos(frontLegAngle) * UPPER_LEG;
