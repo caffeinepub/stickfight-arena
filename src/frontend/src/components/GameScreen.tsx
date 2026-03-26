@@ -79,6 +79,8 @@ export default function GameScreen({
     jump: false,
     attack: false,
     special: false,
+    block: false,
+    kick: false,
   });
   const joystickOriginRef = useRef<{ x: number; y: number } | null>(null);
   const [joystickPos, setJoystickPos] = useState<JoystickPos>({ x: 0, y: 0 });
@@ -98,6 +100,8 @@ export default function GameScreen({
       jump: keys.has("w") || keys.has("W"),
       attack: keys.has("f") || keys.has("F"),
       special: keys.has("g") || keys.has("G"),
+      block: keys.has("s") || keys.has("S"),
+      kick: keys.has("h") || keys.has("H"),
     };
   }, [platformMode]);
 
@@ -109,6 +113,8 @@ export default function GameScreen({
       jump: keys.has("ArrowUp"),
       attack: keys.has("l") || keys.has("L"),
       special: keys.has("k") || keys.has("K"),
+      block: keys.has("ArrowDown"),
+      kick: keys.has(";") || keys.has(":"),
     };
   }, []);
 
@@ -469,6 +475,62 @@ export default function GameScreen({
               >
                 ATK
               </button>
+
+              {/* Block button */}
+              <button
+                type="button"
+                data-ocid="game.mobile_block_button"
+                className="flex items-center justify-center font-black text-sm uppercase tracking-widest select-none"
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(80,160,224,0.25)",
+                  border: "2px solid rgba(80,160,224,0.7)",
+                  color: "#80c8ff",
+                  touchAction: "none",
+                  userSelect: "none",
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.block = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.block = false;
+                }}
+                onClick={(e) => e.preventDefault()}
+              >
+                BLK
+              </button>
+
+              {/* Kick button */}
+              <button
+                type="button"
+                data-ocid="game.mobile_kick_button"
+                className="flex items-center justify-center font-black text-sm uppercase tracking-widest select-none"
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(224,136,48,0.25)",
+                  border: "2px solid rgba(224,136,48,0.7)",
+                  color: "#ffaa60",
+                  touchAction: "none",
+                  userSelect: "none",
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.kick = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  mobileRef.current.kick = false;
+                }}
+                onClick={(e) => e.preventDefault()}
+              >
+                KICK
+              </button>
             </div>
           </div>
         )}
@@ -477,8 +539,8 @@ export default function GameScreen({
       {/* Controls reminder — hidden on mobile */}
       {!isMobile && (
         <div className="flex gap-8 text-xs opacity-40 text-white font-mono">
-          <span>P1: WASD move · F attack · G special</span>
-          <span>P2: Arrows move · L attack · K special</span>
+          <span>P1: WASD move · F attack · H kick · S block · G special</span>
+          <span>P2: Arrows move · L attack · ; kick · ↓ block · K special</span>
         </div>
       )}
     </div>

@@ -209,10 +209,10 @@ const ABILITY_INFO: Record<
     label: "Meteor Strike",
     desc: "40 dmg if enemy is center",
   },
-  guardGun: {
-    emoji: "🔫",
-    label: "Guard Gun",
-    desc: "Fire fast bullets like a Squid Game guard",
+  briefcaseSmash: {
+    emoji: "💼",
+    label: "Briefcase Smash",
+    desc: "Hurl a heavy briefcase that stuns on impact",
   },
 };
 

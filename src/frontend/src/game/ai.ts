@@ -44,6 +44,8 @@ export function computeAIControls(state: GameState, dt: number): Controls {
     jump: false,
     attack: false,
     special: false,
+    block: false,
+    kick: false,
   };
 
   if (ai.animState === "dead" || state.phase !== "fighting") {
@@ -62,6 +64,16 @@ export function computeAIControls(state: GameState, dt: number): Controls {
   const dy = player.pos.y - ai.pos.y;
   const dist = Math.abs(dx);
   const hpRatio = ai.hp / ai.maxHp;
+
+  // AI block: if opponent is attacking and close, ~30% chance per reaction tick
+  if (
+    (player.isAttacking || player.isKicking) &&
+    dist < 100 &&
+    !ai.isBlocking &&
+    Math.random() < 0.3
+  ) {
+    controls.block = true;
+  }
 
   // State machine transition
   if (brain.thinkTimer <= 0) {
@@ -98,6 +110,11 @@ export function computeAIControls(state: GameState, dt: number): Controls {
     case "attack": {
       if (dist < 90) {
         controls.attack = Math.random() < 0.5;
+        // Use kick occasionally when close
+        if (dist < 70 && ai.kickCooldown <= 0 && Math.random() < 0.25) {
+          controls.kick = true;
+          controls.attack = false;
+        }
         if (ai.specialCooldown <= 0 && Math.random() < 0.3)
           controls.special = true;
       } else {
@@ -115,6 +132,16 @@ export function computeAIControls(state: GameState, dt: number): Controls {
       if (dx > 0) controls.right = true;
       else controls.left = true;
       if (dist < 100) controls.attack = Math.random() < 0.4;
+      // Kick when airborne and close
+      if (
+        !ai.onGround &&
+        dist < 80 &&
+        ai.kickCooldown <= 0 &&
+        Math.random() < 0.2
+      ) {
+        controls.kick = true;
+        controls.attack = false;
+      }
       break;
     }
     case "retreat": {
@@ -140,6 +167,12 @@ export function computeAIControls(state: GameState, dt: number): Controls {
       }
       break;
     }
+  }
+
+  // Don't block and attack/kick simultaneously
+  if (controls.block) {
+    controls.attack = false;
+    controls.kick = false;
   }
 
   // Reaction delay randomness

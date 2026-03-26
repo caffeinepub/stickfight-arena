@@ -366,36 +366,36 @@ export default function MenuScreen({ onStart, onCheats }: MenuScreenProps) {
             <motion.span
               className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider"
               style={{
-                background: "linear-gradient(135deg, #cc0000, #ff3366)",
-                color: "#ffffff",
+                background: "linear-gradient(135deg, #14284f, #1e3a70)",
+                color: "#ffd700",
                 boxShadow:
-                  "0 0 16px rgba(255,51,102,0.7), 0 0 32px rgba(255,51,102,0.3)",
-                border: "1px solid rgba(255,100,130,0.5)",
+                  "0 0 16px rgba(255,215,0,0.5), 0 0 32px rgba(255,215,0,0.2)",
+                border: "1px solid rgba(255,215,0,0.6)",
                 letterSpacing: "0.12em",
               }}
               animate={{
                 boxShadow: [
-                  "0 0 16px rgba(255,51,102,0.7), 0 0 32px rgba(255,51,102,0.3)",
-                  "0 0 28px rgba(255,51,102,1), 0 0 56px rgba(255,51,102,0.5)",
-                  "0 0 16px rgba(255,51,102,0.7), 0 0 32px rgba(255,51,102,0.3)",
+                  "0 0 16px rgba(255,215,0,0.5), 0 0 32px rgba(255,215,0,0.2)",
+                  "0 0 28px rgba(255,215,0,0.9), 0 0 56px rgba(255,215,0,0.4)",
+                  "0 0 16px rgba(255,215,0,0.5), 0 0 32px rgba(255,215,0,0.2)",
                 ],
               }}
               transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY }}
             >
-              🦑 Squid Game Update!!!!!
+              💼 Job Application Update!
             </motion.span>
             <motion.span
               className="px-2 py-1 rounded-full text-xs font-bold uppercase"
               style={{
-                background: "rgba(255,200,0,0.15)",
-                color: "#ffcc00",
-                border: "1px solid rgba(255,200,0,0.4)",
+                background: "rgba(255,215,0,0.15)",
+                color: "#ffd700",
+                border: "1px solid rgba(255,215,0,0.4)",
                 letterSpacing: "0.08em",
               }}
               animate={{ opacity: [0.7, 1, 0.7] }}
               transition={{ duration: 0.8, repeat: Number.POSITIVE_INFINITY }}
             >
-              ⏰ Limited Time
+              📋 New Skins &amp; Abilities
             </motion.span>
           </motion.div>
         </motion.div>

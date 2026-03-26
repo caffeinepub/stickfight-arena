@@ -372,10 +372,10 @@ const ALL_SPECIALS: {
     emoji: "☄️",
   },
   {
-    id: "guardGun",
-    label: "Guard Gun 🦑",
-    desc: "Fire two fast bullets like a Squid Game guard",
-    emoji: "🔫",
+    id: "briefcaseSmash",
+    label: "Briefcase Smash",
+    desc: "Hurl a heavy briefcase that stuns on impact",
+    emoji: "💼",
   },
 ];
 
@@ -824,29 +824,19 @@ const CHARACTER_SKINS: {
   label: string;
   emoji: string;
   desc: string;
-  squidGame?: boolean;
 }[] = [
   { id: "none", label: "Default", emoji: "🥷", desc: "Standard stick fighter" },
   {
-    id: "squidPlayer",
-    label: "Squid Player",
-    emoji: "🟢",
-    desc: "Green tracksuit contestant #456",
-    squidGame: true,
+    id: "bizSuit",
+    label: "Business Pro",
+    emoji: "💼",
+    desc: "Sharp suit, briefcase ready. Always dressed to impress.",
   },
   {
-    id: "squidGuard",
-    label: "Squid Guard",
-    emoji: "🔴",
-    desc: "Pink-suited guard with circle mask & gun",
-    squidGame: true,
-  },
-  {
-    id: "squidDoll",
-    label: "Squid Doll",
-    emoji: "🪆",
-    desc: "The creepy red-light green-light doll",
-    squidGame: true,
+    id: "jobApp",
+    label: "Job Application",
+    emoji: "📄",
+    desc: "Your whole body IS a job application. Printed, signed, and ready to fight.",
   },
 ];
 
@@ -963,19 +953,19 @@ function PlayerCustomizer({
       <div>
         <p
           className="text-xs font-semibold mb-2 uppercase tracking-wider flex items-center gap-2"
-          style={{ color: "#ff4466" }}
+          style={{ color: "#ffd700" }}
         >
-          <span>🦑</span> Character Skin
+          <span>💼</span> Character Skin
           <span
             className="text-xs font-bold px-1.5 py-0.5 rounded"
             style={{
-              background: "rgba(255,68,102,0.2)",
-              color: "#ff4466",
-              border: "1px solid rgba(255,68,102,0.4)",
+              background: "rgba(255,215,0,0.15)",
+              color: "#ffd700",
+              border: "1px solid rgba(255,215,0,0.4)",
               fontSize: "0.6rem",
             }}
           >
-            SQUID GAME
+            JOB APPLICATION UPDATE
           </span>
         </p>
         <div className="flex flex-col gap-1">
@@ -989,27 +979,19 @@ function PlayerCustomizer({
               style={{
                 background:
                   custom.character === sk.id
-                    ? "rgba(255,68,102,0.18)"
+                    ? "rgba(255,215,0,0.12)"
                     : "rgba(255,255,255,0.04)",
-                border: `1px solid ${custom.character === sk.id ? "#ff4466" : sk.squidGame ? "rgba(255,68,102,0.3)" : "rgba(255,255,255,0.08)"}`,
+                border: `1px solid ${custom.character === sk.id ? "#ffd700" : "rgba(255,255,255,0.08)"}`,
                 cursor: "pointer",
               }}
             >
               <span
                 className="text-xs font-bold"
                 style={{
-                  color: custom.character === sk.id ? "#ff4466" : "#ddd",
+                  color: custom.character === sk.id ? "#ffd700" : "#ddd",
                 }}
               >
                 {sk.emoji} {sk.label}
-                {sk.squidGame && (
-                  <span
-                    className="ml-2 text-xs"
-                    style={{ color: "#ff4466", fontSize: "0.6rem" }}
-                  >
-                    ⏰ LIMITED
-                  </span>
-                )}
               </span>
               <p
                 className="text-xs text-muted-foreground mt-0.5"

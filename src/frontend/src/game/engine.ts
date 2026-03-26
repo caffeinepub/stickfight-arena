@@ -16,6 +16,10 @@ const GRAVITY = 0.55;
 const MOVE_SPEED = 4.5;
 const JUMP_FORCE = -13.5;
 const ATTACK_RANGE = 72;
+const KICK_DAMAGE = 8;
+const KICK_RANGE = 50;
+const KICK_DURATION = 0.2;
+const KICK_COOLDOWN = 0.35;
 const ATTACK_DAMAGE = 12;
 const ATTACK_DURATION = 0.25;
 const ATTACK_COOLDOWN = 0.5;
@@ -87,6 +91,11 @@ function makePlayer(id: 1 | 2, custom: Player["customization"]): Player {
     dashTimer: 0,
     isGroundSlamming: false,
     groundSlamPhase: "none",
+    isBlocking: false,
+    blockTimer: 0,
+    isKicking: false,
+    kickCooldown: 0,
+    kickHitbox: null,
     frozen: false,
     frozenTimer: 0,
     shielded: false,
@@ -105,6 +114,8 @@ function makePlayer(id: 1 | 2, custom: Player["customization"]): Player {
     armorBrokenTimer: 0,
     poisoned: false,
     poisonTimer: 0,
+    slowed: false,
+    slowedTimer: 0,
   };
 }
 
@@ -215,6 +226,21 @@ function dealDamage(
   knockVy = -5,
 ): Player {
   if (defender.isInvincible || defender.shielded) return defender;
+  if (defender.isBlocking) {
+    const reducedDmg = Math.floor(baseDmg * 0.2);
+    spawnParticles(
+      particles,
+      defender.pos.x,
+      defender.pos.y - 40,
+      "#80c8ff",
+      6,
+      3,
+    );
+    return {
+      ...defender,
+      hp: Math.max(0, defender.hp - reducedDmg),
+    };
+  }
   let dmg = baseDmg;
   if (attacker.berserkerActive) dmg *= 2;
   if (defender.armorBroken) dmg *= 1.5;
@@ -274,6 +300,12 @@ function applyControls(
   if (np.armorBrokenTimer <= 0) np.armorBroken = false;
   if (np.poisonTimer > 0) np.poisonTimer -= dt;
   if (np.poisonTimer <= 0) np.poisoned = false;
+  if (np.slowedTimer > 0) np.slowedTimer -= dt;
+  if (np.slowedTimer <= 0) np.slowed = false;
+  if (np.kickCooldown > 0) np.kickCooldown -= dt;
+  if (np.blockTimer > 0) np.blockTimer -= dt;
+  if (np.blockTimer <= 0 && np.isBlocking && !controls.block)
+    np.isBlocking = false;
 
   // poison damage over time
   if (np.poisoned && !np.isInvincible) {
@@ -283,7 +315,11 @@ function applyControls(
   // frozen: can't move
   if (np.frozen) return np;
 
-  const speed = np.speedBoosted ? MOVE_SPEED * 2 : MOVE_SPEED;
+  const speed = np.speedBoosted
+    ? MOVE_SPEED * 2
+    : np.slowed
+      ? MOVE_SPEED * 0.35
+      : MOVE_SPEED;
 
   if (np.animState !== "dead" && np.animState !== "hurt") {
     if (!np.isDashing) {
@@ -309,7 +345,58 @@ function applyControls(
     }
     if (!np.onGround) np.animState = "jump";
 
-    if (controls.attack && np.attackCooldown <= 0 && !np.isDashing) {
+    // Blocking
+    if (controls.block && !np.isDashing) {
+      np.isBlocking = true;
+      np.blockTimer = 0.1;
+      np.animState = "block";
+      np.vel.x *= 0.5;
+    } else if (!controls.block && np.blockTimer <= 0) {
+      if (np.isBlocking) {
+        np.isBlocking = false;
+        if (np.animState === "block")
+          np.animState = np.onGround ? "idle" : "jump";
+      }
+    }
+
+    // Kick
+    if (
+      controls.kick &&
+      np.kickCooldown <= 0 &&
+      !np.isDashing &&
+      !np.isBlocking
+    ) {
+      np.kickCooldown = KICK_COOLDOWN;
+      np.isKicking = true;
+      np.animState = "kick";
+      np.animTimer = KICK_DURATION;
+      np.kickHitbox = {
+        x: np.pos.x + np.facing * 15,
+        y: np.pos.y - 70 * 0.3,
+        w: KICK_RANGE * np.facing,
+        h: 35,
+      };
+      spawnParticles(
+        particles,
+        np.pos.x + np.facing * 30,
+        np.pos.y - 70 * 0.3,
+        PLAYER_COLOR_HEX[np.customization.color],
+        4,
+        3,
+      );
+    }
+    if (np.animTimer <= 0 && np.animState === "kick") {
+      np.isKicking = false;
+      np.kickHitbox = null;
+      np.animState = np.onGround ? "idle" : "jump";
+    }
+
+    if (
+      controls.attack &&
+      np.attackCooldown <= 0 &&
+      !np.isDashing &&
+      !np.isBlocking
+    ) {
       np.attackCooldown = ATTACK_COOLDOWN;
       np.isAttacking = true;
       np.animState = "attack";
@@ -538,8 +625,16 @@ function applyControls(
             particles,
             np.pos.x,
             np.pos.y - PLAYER_H / 2,
-            "#ff4400",
-            16,
+            "#ff2200",
+            20,
+            7,
+          );
+          spawnParticles(
+            particles,
+            np.pos.x,
+            np.pos.y - PLAYER_H / 2,
+            "#ff8800",
+            12,
             5,
           );
           break;
@@ -617,7 +712,7 @@ function applyControls(
           break;
 
         case "magneticPull":
-          // Clear opponent projectiles
+          // Pull + clear opponent projectiles
           for (const proj of projectiles) {
             if (proj.owner !== np.id) proj.active = false;
           }
@@ -626,8 +721,8 @@ function applyControls(
             np.pos.x,
             np.pos.y - PLAYER_H / 2,
             "#8888ff",
-            12,
-            4,
+            18,
+            5,
           );
           break;
 
@@ -745,8 +840,16 @@ function applyControls(
               (np.pos.x + opp.pos.x) / 2,
               np.pos.y - 20,
               "#ffcc00",
-              18,
-              6,
+              22,
+              8,
+            );
+            spawnParticles(
+              particles,
+              np.pos.x,
+              np.pos.y - 20,
+              "#ffaa00",
+              12,
+              5,
             );
           }
           break;
@@ -775,14 +878,19 @@ function applyControls(
           break;
 
         case "iceWall":
-          spawnParticles(
-            particles,
-            opp.pos.x,
-            opp.pos.y - 40,
-            "#aaddff",
-            16,
-            3,
-          );
+          for (let i = -1; i <= 1; i++) {
+            projectiles.push({
+              x: np.pos.x + np.facing * 20,
+              y: np.pos.y - PLAYER_H * 0.55,
+              vx: np.facing * 6,
+              vy: i * 3,
+              owner: np.id,
+              timer: 2.0,
+              active: true,
+              color: "#aaddff",
+              type: "frost",
+            });
+          }
           break;
 
         case "flameThrow":
@@ -933,7 +1041,14 @@ function applyControls(
           break;
 
         case "energyField":
-          np.hp = Math.min(np.maxHp, np.hp + 15);
+          spawnParticles(
+            particles,
+            np.pos.x,
+            np.pos.y - PLAYER_H / 2,
+            "#00ffff",
+            20,
+            7,
+          );
           spawnParticles(
             particles,
             np.pos.x,
@@ -1032,37 +1147,25 @@ function applyControls(
           }
           break;
 
-        case "guardGun":
-          // Fire a fast bullet projectile straight ahead
+        case "briefcaseSmash":
+          // Hurl a briefcase projectile - deals 20 damage and stuns on hit
           projectiles.push({
             x: np.pos.x + np.facing * 24,
-            y: np.pos.y - PLAYER_H * 0.6,
-            vx: np.facing * 18,
-            vy: 0,
-            owner: np.id,
-            timer: 1.2,
-            active: true,
-            color: "#ffcc00",
-            type: "bullet",
-          });
-          // Second bullet slightly offset
-          projectiles.push({
-            x: np.pos.x + np.facing * 24,
-            y: np.pos.y - PLAYER_H * 0.6,
-            vx: np.facing * 18,
+            y: np.pos.y - PLAYER_H * 0.5,
+            vx: np.facing * 9,
             vy: -1,
             owner: np.id,
-            timer: 1.2,
+            timer: 1.5,
             active: true,
-            color: "#ffcc00",
-            type: "bullet",
+            color: "#8B4513",
+            type: "briefcase",
           });
           spawnParticles(
             particles,
-            np.pos.x + np.facing * 30,
-            np.pos.y - PLAYER_H * 0.6,
-            "#ffee88",
-            8,
+            np.pos.x + np.facing * 28,
+            np.pos.y - PLAYER_H * 0.5,
+            "#a0522d",
+            10,
             4,
           );
           break;
@@ -1334,7 +1437,8 @@ function applyInstantSpecials(
       break;
     case "timeSlowdown":
       if (!def.isInvincible) {
-        def = { ...def, frozen: true, frozenTimer: 1.5, isInvincible: false };
+        def = { ...def, slowed: true, slowedTimer: 3.0 };
+        spawnParticles(particles, def.pos.x, def.pos.y - 40, "#8844ff", 8, 2);
       }
       break;
     case "spikeWall":
@@ -1344,7 +1448,7 @@ function applyInstantSpecials(
       break;
     case "shockwave":
       if (dist < 200 && !def.isInvincible && !def.shielded) {
-        def = dealDamage(att, def, 15, particles, att.facing * 8, -5);
+        def = dealDamage(att, def, 15, particles, att.facing * 14, -7);
       }
       break;
     case "windBlast":
@@ -1406,8 +1510,8 @@ function applyInstantSpecials(
       }
       break;
     case "energyField":
-      if (dist < 120 && !def.isInvincible && !def.shielded) {
-        def = dealDamage(att, def, 15, particles, att.facing * 4, -4);
+      if (dist < 160 && !def.isInvincible && !def.shielded) {
+        def = dealDamage(att, def, 20, particles, att.facing * 4, -4);
       }
       break;
     case "lifesteal":
@@ -1424,8 +1528,17 @@ function applyInstantSpecials(
       }
       break;
     case "magneticPull":
-      if (dist < 180 && !def.isInvincible && !def.shielded) {
-        def = dealDamage(att, def, 5, particles, att.facing * 3, -2);
+      if (dist < 200 && !def.isInvincible) {
+        const pullDir = att.pos.x < def.pos.x ? -1 : 1;
+        def = { ...def, vel: { x: pullDir * 10, y: def.vel.y } };
+        if (dist < 100 && !def.shielded) {
+          def = dealDamage(att, def, 15, particles, pullDir * 6, -4);
+        }
+      }
+      break;
+    case "berserker":
+      if (dist < 80 && !def.isInvincible && !def.shielded) {
+        def = dealDamage(att, def, 15, particles, att.facing * 5, -5);
       }
       break;
     case "sonicBoom": // handled via projectile
@@ -1438,6 +1551,11 @@ function applyInstantSpecials(
         !def.shielded
       ) {
         def = dealDamage(att, def, 40, particles, att.facing * 5, -8);
+      }
+      break;
+    case "powerSlam":
+      if (att.isDashing && dist < 50 && !def.isInvincible && !def.shielded) {
+        def = dealDamage(att, def, 25, particles, att.facing * 8, -5);
       }
       break;
     case "ragePunch":
@@ -1545,6 +1663,20 @@ function updateProjectiles(
             vel: { x: np.vx * 0.5, y: -8 },
           };
           spawnParticles(particles, np.x, np.y, "#ff8800", 20, 7);
+        } else if (np.type === "briefcase") {
+          const newHp = Math.max(0, t.hp - 20);
+          updatedTarget = {
+            ...t,
+            hp: newHp,
+            animState: newHp <= 0 ? "dead" : "hurt",
+            animTimer: 0.4,
+            isInvincible: true,
+            invincibleTimer: 0.5,
+            frozen: true,
+            frozenTimer: 0.8,
+            vel: { x: np.vx * 0.2, y: -5 },
+          };
+          spawnParticles(particles, np.x, np.y, "#8B4513", 14, 5);
         } else if (np.type === "bullet") {
           const newHp = Math.max(0, t.hp - 20);
           updatedTarget = {
@@ -1689,6 +1821,8 @@ export function updateGame(
   if (
     p1.animState !== "attack" &&
     p1.animState !== "special" &&
+    p1.animState !== "block" &&
+    p1.animState !== "kick" &&
     !p1.isDashing
   ) {
     p1 = { ...p1, facing: p1.pos.x < p2.pos.x ? 1 : -1 };
@@ -1696,6 +1830,8 @@ export function updateGame(
   if (
     p2.animState !== "attack" &&
     p2.animState !== "special" &&
+    p2.animState !== "block" &&
+    p2.animState !== "kick" &&
     !p2.isDashing
   ) {
     p2 = { ...p2, facing: p2.pos.x < p1.pos.x ? 1 : -1 };
@@ -1706,6 +1842,40 @@ export function updateGame(
   [np2, np1] = checkAttackHit(np2, np1, particles);
   p1 = np1;
   p2 = np2;
+
+  // kick hits
+  if (p1.isKicking && p1.kickHitbox) {
+    const hb = p1.kickHitbox;
+    const hbX = hb.w > 0 ? hb.x : hb.x + hb.w;
+    const hbW = Math.abs(hb.w);
+    const r2 = { x: p2.pos.x - 10, y: p2.pos.y - 70, w: 20, h: 70 };
+    if (
+      hbX < r2.x + r2.w &&
+      hbX + hbW > r2.x &&
+      hb.y < r2.y + r2.h &&
+      hb.y + hb.h > r2.y
+    ) {
+      p2 = dealDamage(p1, p2, KICK_DAMAGE, particles, p1.facing * 5, -10);
+      p1 = { ...p1, isKicking: false, kickHitbox: null };
+      playHit();
+    }
+  }
+  if (p2.isKicking && p2.kickHitbox) {
+    const hb = p2.kickHitbox;
+    const hbX = hb.w > 0 ? hb.x : hb.x + hb.w;
+    const hbW = Math.abs(hb.w);
+    const r1 = { x: p1.pos.x - 10, y: p1.pos.y - 70, w: 20, h: 70 };
+    if (
+      hbX < r1.x + r1.w &&
+      hbX + hbW > r1.x &&
+      hb.y < r1.y + r1.h &&
+      hb.y + hb.h > r1.y
+    ) {
+      p1 = dealDamage(p2, p1, KICK_DAMAGE, particles, p2.facing * 5, -10);
+      p2 = { ...p2, isKicking: false, kickHitbox: null };
+      playHit();
+    }
+  }
 
   // ground slam
   p2 = checkGroundSlamHit(p1, p2, particles);

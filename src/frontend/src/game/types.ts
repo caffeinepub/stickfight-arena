@@ -40,7 +40,7 @@ export type Hat =
   | "deerstalker"
   | "laurel";
 
-export type CharacterSkin = "none" | "squidDoll" | "squidGuard" | "squidPlayer";
+export type CharacterSkin = "none" | "bizSuit" | "jobApp";
 
 export type SpecialAbility =
   | "dash"
@@ -92,7 +92,7 @@ export type SpecialAbility =
   | "powerSlam"
   | "sonicBoom"
   | "meteorStrike"
-  | "guardGun";
+  | "briefcaseSmash";
 
 export type PlayerColor =
   | "red"
@@ -130,7 +130,9 @@ export type AnimationState =
   | "attack"
   | "special"
   | "hurt"
-  | "dead";
+  | "dead"
+  | "block"
+  | "kick";
 
 export interface AttackHitbox {
   x: number;
@@ -160,6 +162,12 @@ export interface Player {
   dashTimer: number;
   isGroundSlamming: boolean;
   groundSlamPhase: "up" | "down" | "none";
+  // blocking & kicking
+  isBlocking: boolean;
+  blockTimer: number;
+  isKicking: boolean;
+  kickCooldown: number;
+  kickHitbox: AttackHitbox | null;
   // status effects
   frozen: boolean;
   frozenTimer: number;
@@ -180,6 +188,8 @@ export interface Player {
   armorBrokenTimer: number;
   poisoned: boolean;
   poisonTimer: number;
+  slowed: boolean;
+  slowedTimer: number;
 }
 
 export interface Projectile {
@@ -199,7 +209,9 @@ export interface Projectile {
     | "grenade"
     | "sonic"
     | "icicle"
-    | "bullet";
+    | "bullet"
+    | "spikewall"
+    | "briefcase";
   boomerangReturning?: boolean;
 }
 
@@ -251,6 +263,8 @@ export interface Controls {
   jump: boolean;
   attack: boolean;
   special: boolean;
+  block: boolean;
+  kick: boolean;
 }
 
 export type GameMode = "local" | "ai";

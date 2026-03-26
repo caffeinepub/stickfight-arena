@@ -886,6 +886,20 @@ function drawStatusEffects(
     ctx.restore();
   }
 
+  if ((player as any).slowed) {
+    const pulse = 0.5 + Math.abs(Math.sin(tick * 4)) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = pulse * 0.35;
+    ctx.fillStyle = "#8844ff";
+    ctx.fillRect(cx - 14, cy - PLAYER_H - 2, 28, PLAYER_H + 2);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#cc88ff";
+    ctx.font = "16px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("⏰", cx, cy - PLAYER_H - 8);
+    ctx.restore();
+  }
+
   if (player.speedBoosted) {
     ctx.save();
     ctx.globalAlpha = 0.6;
@@ -939,27 +953,55 @@ function drawCharacterSkin(
   if (skin === "none") return;
   ctx.save();
 
-  if (skin === "squidPlayer") {
-    // Green tracksuit - fill body rectangle
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = "#2d8a3e";
-    ctx.strokeStyle = "#1a5c28";
+  if (skin === "bizSuit") {
+    // Sharp business suit - navy/charcoal
+    ctx.globalAlpha = 0.9;
+    // Pocket square near collar (uses headY and HEAD_R for positioning)
+    const collarY = headY + HEAD_R + bodyBob + 2;
+    // Torso - dark navy jacket
+    ctx.fillStyle = "#1a2340";
+    ctx.strokeStyle = "#0d1528";
     ctx.lineWidth = 1.5;
-    // Torso
     ctx.beginPath();
-    ctx.roundRect(cx - 10, shoulderY + bodyBob, 20, hipY - shoulderY, 4);
+    ctx.roundRect(cx - 11, shoulderY + bodyBob, 22, hipY - shoulderY, 4);
     ctx.fill();
     ctx.stroke();
-    // Number badge (white square on chest)
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(cx - 5, shoulderY + bodyBob + 6, 10, 8);
-    ctx.fillStyle = "#000000";
-    ctx.font = "bold 6px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("456", cx, shoulderY + bodyBob + 13);
-    // Legs
-    ctx.fillStyle = "#2d8a3e";
-    ctx.strokeStyle = "#1a5c28";
+    // White dress shirt center strip
+    ctx.fillStyle = "#f0f0f0";
+    ctx.beginPath();
+    ctx.roundRect(cx - 4, shoulderY + bodyBob, 8, hipY - shoulderY - 2, 2);
+    ctx.fill();
+    // Burgundy tie
+    ctx.fillStyle = "#8b0000";
+    ctx.beginPath();
+    ctx.moveTo(cx - 2, shoulderY + bodyBob + 2);
+    ctx.lineTo(cx + 2, shoulderY + bodyBob + 2);
+    ctx.lineTo(cx + 3, shoulderY + bodyBob + 12);
+    ctx.lineTo(cx, shoulderY + bodyBob + 16);
+    ctx.lineTo(cx - 3, shoulderY + bodyBob + 12);
+    ctx.closePath();
+    ctx.fill();
+    // Lapel lines
+    ctx.strokeStyle = "#2a3560";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, shoulderY + bodyBob);
+    ctx.lineTo(cx - 8, shoulderY + bodyBob + 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 4, shoulderY + bodyBob);
+    ctx.lineTo(cx + 8, shoulderY + bodyBob + 8);
+    ctx.stroke();
+    // White collar/pocket-square near neck
+    ctx.fillStyle = "#f8f8f8";
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.roundRect(cx - 3, collarY, 6, 5, 1);
+    ctx.fill();
+    // Legs - dark trousers
+    ctx.fillStyle = "#1a2340";
+    ctx.strokeStyle = "#0d1528";
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect(cx - 9, hipY + bodyBob, 8, feet - hipY - bodyBob, 3);
     ctx.fill();
@@ -968,147 +1010,151 @@ function drawCharacterSkin(
     ctx.roundRect(cx + 1, hipY + bodyBob, 8, feet - hipY - bodyBob, 3);
     ctx.fill();
     ctx.stroke();
-  } else if (skin === "squidGuard") {
-    // Pink suit
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = "#e8729a";
-    ctx.strokeStyle = "#c04070";
+    // Small briefcase at hip
+    const briefY = (shoulderY + hipY) / 2 + bodyBob + 4;
+    const briefX = cx - facing * 14;
+    ctx.fillStyle = "#8B4513";
+    ctx.strokeStyle = "#5a2d0c";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(briefX - 6, briefY - 4, 12, 8, 1);
+    ctx.fill();
+    ctx.stroke();
+    // Handle on briefcase
+    ctx.strokeStyle = "#5a2d0c";
     ctx.lineWidth = 1.5;
-    // Torso
     ctx.beginPath();
-    ctx.roundRect(cx - 11, shoulderY + bodyBob, 22, hipY - shoulderY, 4);
-    ctx.fill();
+    ctx.arc(briefX, briefY - 4, 3, Math.PI, 0);
     ctx.stroke();
-    // Legs
-    ctx.fillStyle = "#e8729a";
-    ctx.strokeStyle = "#c04070";
-    ctx.beginPath();
-    ctx.roundRect(cx - 10, hipY + bodyBob, 9, feet - hipY - bodyBob, 3);
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.roundRect(cx + 1, hipY + bodyBob, 9, feet - hipY - bodyBob, 3);
-    ctx.fill();
-    ctx.stroke();
-    // Black circle mask over head
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = "#111111";
-    ctx.beginPath();
-    ctx.arc(cx, headY + bodyBob, HEAD_R + 2, 0, Math.PI * 2);
-    ctx.fill();
-    // Circle symbol on mask
-    ctx.strokeStyle = "#ff6699";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, headY + bodyBob, HEAD_R * 0.5, 0, Math.PI * 2);
-    ctx.stroke();
-    // Gun (held at arm level)
-    const gunY = (shoulderY + hipY) / 2 + bodyBob - 5;
-    const gunX = cx + facing * 14;
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = "#333333";
-    ctx.strokeStyle = "#555555";
-    ctx.lineWidth = 2;
-    // Barrel
-    ctx.beginPath();
-    ctx.rect(gunX, gunY - 3, facing * 18, 6);
-    ctx.fill();
-    ctx.stroke();
-    // Handle
-    ctx.beginPath();
-    ctx.rect(gunX + facing * 4, gunY + 3, facing * 6, 8);
-    ctx.fill();
-    ctx.stroke();
-  } else if (skin === "squidDoll") {
-    // White dress
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = "#f0e8d0";
-    ctx.strokeStyle = "#c8b888";
+  }
+
+  if (skin === "jobApp") {
+    // Job application form skin - character body looks like a printed form
+    ctx.globalAlpha = 0.95;
+    const torsoH = hipY - shoulderY;
+    const torsoW = 26;
+
+    // Paper background - off-white form
+    ctx.fillStyle = "#f5f0e8";
+    ctx.strokeStyle = "#c8bfa0";
     ctx.lineWidth = 1.5;
-    // Dress (wider trapezoid)
     ctx.beginPath();
-    ctx.moveTo(cx - 10, shoulderY + bodyBob);
-    ctx.lineTo(cx + 10, shoulderY + bodyBob);
-    ctx.lineTo(cx + 16, hipY + bodyBob + 8);
-    ctx.lineTo(cx - 16, hipY + bodyBob + 8);
-    ctx.closePath();
+    ctx.roundRect(
+      cx - torsoW / 2,
+      shoulderY + bodyBob - 2,
+      torsoW,
+      torsoH + 4,
+      2,
+    );
     ctx.fill();
     ctx.stroke();
-    // Red collar
-    ctx.fillStyle = "#cc2200";
+
+    // Header bar - "APPLICATION" label at top of form
+    ctx.fillStyle = "#1a3a6b";
     ctx.beginPath();
-    ctx.ellipse(cx, shoulderY + bodyBob + 3, 9, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Red bow/ribbon detail on head
-    ctx.fillStyle = "#cc2200";
-    ctx.beginPath();
-    ctx.ellipse(
-      cx - 8,
-      headY + bodyBob - HEAD_R + 2,
+    ctx.roundRect(
+      cx - torsoW / 2,
+      shoulderY + bodyBob - 2,
+      torsoW,
       6,
-      4,
-      -0.5,
-      0,
-      Math.PI * 2,
+      [2, 2, 0, 0],
     );
     ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(
-      cx + 8,
-      headY + bodyBob - HEAD_R + 2,
-      6,
-      4,
-      0.5,
-      0,
-      Math.PI * 2,
-    );
-    ctx.fill();
-    ctx.fillStyle = "#ff3300";
-    ctx.beginPath();
-    ctx.arc(cx, headY + bodyBob - HEAD_R + 2, 4, 0, Math.PI * 2);
-    ctx.fill();
-    // Creepy red triangle on face
-    ctx.fillStyle = "#cc2200";
-    ctx.globalAlpha = 0.7;
-    ctx.beginPath();
-    ctx.moveTo(cx, headY + bodyBob - 6);
-    ctx.lineTo(cx - 6, headY + bodyBob + 4);
-    ctx.lineTo(cx + 6, headY + bodyBob + 4);
-    ctx.closePath();
-    ctx.fill();
-    // Wide creepy eyes
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.ellipse(
-      cx - 5 + facing * 2,
-      headY + bodyBob - 3,
-      3,
-      2.5,
-      0,
-      0,
-      Math.PI * 2,
-    );
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(
-      cx + 5 + facing * 2,
-      headY + bodyBob - 3,
-      3,
-      2.5,
-      0,
-      0,
-      Math.PI * 2,
-    );
-    ctx.fill();
-    // White highlight in eyes
+    // Tiny white text lines in header
     ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 3px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("APPLICATION", cx, shoulderY + bodyBob + 2.5);
+
+    // Form lines - horizontal ruled lines on the paper body
+    ctx.strokeStyle = "#9bacc8";
+    ctx.lineWidth = 0.6;
+    const lineStart = shoulderY + bodyBob + 8;
+    const lineSpacing = 5;
+    const lineCount = Math.floor((torsoH - 10) / lineSpacing);
+    for (let i = 0; i < lineCount; i++) {
+      const ly = lineStart + i * lineSpacing;
+      ctx.beginPath();
+      ctx.moveTo(cx - torsoW / 2 + 3, ly);
+      ctx.lineTo(cx + torsoW / 2 - 3, ly);
+      ctx.stroke();
+    }
+
+    // Checkboxes on left side
+    ctx.strokeStyle = "#1a3a6b";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 3; i++) {
+      const bx = cx - torsoW / 2 + 4;
+      const by = lineStart + 2 + i * (lineSpacing * 1.8);
+      ctx.strokeRect(bx, by, 3.5, 3.5);
+      // First checkbox checked
+      if (i === 0) {
+        ctx.strokeStyle = "#1a3a6b";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bx + 0.5, by + 2);
+        ctx.lineTo(bx + 1.5, by + 3.2);
+        ctx.lineTo(bx + 3, by + 0.8);
+        ctx.stroke();
+        ctx.strokeStyle = "#1a3a6b";
+        ctx.lineWidth = 0.8;
+      }
+    }
+
+    // Signature line at the bottom of form
+    const sigY = hipY + bodyBob - 2;
+    ctx.strokeStyle = "#1a3a6b";
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
-    ctx.arc(cx - 4 + facing * 2, headY + bodyBob - 4, 1, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(cx - torsoW / 2 + 3, sigY);
+    ctx.lineTo(cx + torsoW / 2 - 3, sigY);
+    ctx.stroke();
+    // Squiggly signature above the line
+    ctx.strokeStyle = "#2255aa";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(cx + 6 + facing * 2, headY + bodyBob - 4, 1, 0, Math.PI * 2);
+    ctx.moveTo(cx - 6, sigY - 3);
+    ctx.bezierCurveTo(cx - 3, sigY - 6, cx, sigY - 1, cx + 3, sigY - 5);
+    ctx.bezierCurveTo(cx + 5, sigY - 7, cx + 7, sigY - 3, cx + 6, sigY - 2);
+    ctx.stroke();
+
+    // Legs as paper continuation - white with fold crease
+    ctx.fillStyle = "#f5f0e8";
+    ctx.strokeStyle = "#c8bfa0";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(cx - 10, hipY + bodyBob, 8, feet - hipY - bodyBob, 2);
     ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(cx + 2, hipY + bodyBob, 8, feet - hipY - bodyBob, 2);
+    ctx.fill();
+    ctx.stroke();
+    // Fold crease on legs
+    ctx.strokeStyle = "#c8bfa0";
+    ctx.lineWidth = 0.6;
+    const midLeg = hipY + bodyBob + (feet - hipY - bodyBob) / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, midLeg);
+    ctx.lineTo(cx - 2, midLeg);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 2, midLeg);
+    ctx.lineTo(cx + 10, midLeg);
+    ctx.stroke();
+
+    // Paper clip at shoulder
+    const clipX = cx + torsoW / 2 - 3;
+    const clipY = shoulderY + bodyBob - 1;
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(clipX, clipY + 8);
+    ctx.lineTo(clipX, clipY);
+    ctx.arc(clipX - 1.5, clipY, 1.5, 0, Math.PI, false);
+    ctx.lineTo(clipX - 3, clipY + 8);
+    ctx.arc(clipX - 1.5, clipY + 8, 1.5, Math.PI, 0, false);
+    ctx.stroke();
   }
 
   ctx.restore();
@@ -1160,6 +1206,13 @@ function drawStickFigure(
     armSwing = -30;
   } else if (animState === "hurt") {
     bodyBob = 5;
+  } else if (animState === "block") {
+    armSwing = -facing * 20;
+    bodyBob = -2;
+  } else if (animState === "kick") {
+    walkCycle = 35;
+    armSwing = -20;
+    bodyBob = -4;
   }
 
   ctx.lineWidth = 3;
@@ -1257,6 +1310,39 @@ function drawStickFigure(
     ctx.stroke();
     ctx.setLineDash([]);
   }
+
+  // Block shield aura
+  if (player.isBlocking) {
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = "#80c8ff";
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#80c8ff";
+    ctx.beginPath();
+    ctx.ellipse(cx, feet - 35, 28, 40, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = "#80c8ff";
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Kick extended leg visual
+  if (animState === "kick") {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    // Draw extended front leg
+    ctx.beginPath();
+    ctx.moveTo(cx, hipY + bodyBob);
+    ctx.lineTo(cx + facing * 40, feet - 10);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawProjectiles(
@@ -1272,7 +1358,39 @@ function drawProjectiles(
     ctx.fillStyle = proj.color;
     ctx.beginPath();
 
-    if (proj.type === "bullet") {
+    if (proj.type === "briefcase") {
+      // Draw briefcase projectile - brown rectangle with handle
+      ctx.save();
+      ctx.translate(proj.x, proj.y);
+      const angle = Math.atan2(proj.vy, proj.vx);
+      ctx.rotate(angle);
+      ctx.fillStyle = "#8B4513";
+      ctx.strokeStyle = "#5a2d0c";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(-8, -5, 16, 10, 2);
+      ctx.fill();
+      ctx.stroke();
+      // Handle
+      ctx.strokeStyle = "#5a2d0c";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, -5, 4, Math.PI, 0);
+      ctx.stroke();
+      // Clasp detail
+      ctx.fillStyle = "#d4a017";
+      ctx.beginPath();
+      ctx.rect(-2, -2, 4, 4);
+      ctx.fill();
+      // Motion trail
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = "#8B4513";
+      ctx.beginPath();
+      ctx.rect(-18, -4, 10, 8);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    } else if (proj.type === "bullet") {
       // Draw a small elongated bullet
       ctx.save();
       ctx.translate(proj.x, proj.y);
