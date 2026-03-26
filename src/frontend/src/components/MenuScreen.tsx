@@ -595,18 +595,6 @@ export default function MenuScreen({ onStart, onCheats }: MenuScreenProps) {
           📦 Win rounds to unlock new hats &amp; abilities
         </motion.p>
       </div>
-
-      <footer className="absolute bottom-4 text-xs text-muted-foreground z-10">
-        © {new Date().getFullYear()}. Built with{" "}
-        <a
-          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-          className="underline"
-          target="_blank"
-          rel="noreferrer"
-        >
-          caffeine.ai
-        </a>
-      </footer>
     </div>
   );
 }
