@@ -1,6 +1,7 @@
 import { FINISHER_DURATION } from "./engine";
 import type {
   GameState,
+  HitFlash,
   Particle,
   Platform,
   Player,
@@ -1218,14 +1219,39 @@ function drawStickFigure(
     frontKneeBend = 0.15 + Math.max(0, walkCycle) * 0.35;
     backKneeBend = 0.15 + Math.max(0, -walkCycle) * 0.35;
   } else if (animState === "attack") {
-    frontArmAngle = -1.1; // punch forward/up
-    backArmAngle = 0.6;
-    frontElbowBend = 0.1;
-    backElbowBend = 0.5;
-    bodyLean = facing * 0.18;
-    bodyBob = -3;
-    frontLegAngle = 0.15;
-    backLegAngle = -0.1;
+    // Smooth multi-frame punch: wind-up → step → snap extend → follow through → retract
+    const ATTACK_DUR = 0.42;
+    const atkT = Math.max(0, Math.min(1, 1 - player.animTimer / ATTACK_DUR));
+    // phases: pull-back 0→0.18, step 0.18→0.32, snap 0.32→0.55, hold 0.55→0.68, retract 0.68→1.0
+    let punchExtend = 0;
+    let shoulderDip = 0;
+    if (atkT < 0.18) {
+      punchExtend = -(atkT / 0.18) * 0.55; // wind-up pull back
+      shoulderDip = (atkT / 0.18) * 0.3;
+    } else if (atkT < 0.32) {
+      const p = (atkT - 0.18) / 0.14;
+      punchExtend = -0.55 + p * 0.3; // step-in
+      shoulderDip = 0.3 - p * 0.1;
+    } else if (atkT < 0.55) {
+      const p = (atkT - 0.32) / 0.23;
+      punchExtend = -0.25 + p * 1.95; // explosive snap forward
+      shoulderDip = 0.2 - p * 0.2;
+    } else if (atkT < 0.68) {
+      punchExtend = 1.7; // hold at full extension
+      shoulderDip = 0;
+    } else {
+      const p = (atkT - 0.68) / 0.32;
+      punchExtend = 1.7 - p * 2.15; // retract
+    }
+    frontArmAngle = -0.45 + punchExtend * 1.05;
+    backArmAngle = 0.45 - punchExtend * 0.3 + shoulderDip * 0.2;
+    frontElbowBend =
+      atkT < 0.32 ? 0.6 : Math.max(0.02, 0.6 - punchExtend * 0.55);
+    backElbowBend = 0.55 + shoulderDip * 0.2;
+    bodyLean = facing * (0.1 + punchExtend * 0.18 + shoulderDip * 0.1);
+    bodyBob = -punchExtend * 6 + shoulderDip * 4;
+    frontLegAngle = 0.2 + (atkT > 0.18 ? 0.12 : 0); // step forward
+    backLegAngle = -0.15;
   } else if (animState === "special") {
     frontArmAngle = -1.4; // both arms raised
     backArmAngle = -0.9;
@@ -1260,14 +1286,46 @@ function drawStickFigure(
     bodyLean = facing * 0.05;
     bodyBob = -2;
   } else if (animState === "kick") {
-    frontArmAngle = -0.5;
-    backArmAngle = 0.3;
-    bodyLean = facing * 0.15;
-    bodyBob = -4;
-    frontLegAngle = 0.7; // kicking leg swings forward
-    backLegAngle = -0.2;
-    frontKneeBend = -0.2; // kick leg extends
-    backKneeBend = 0.3;
+    // Multi-frame kick: balance → deep chamber → explosive extend → hold → retract
+    const KICK_DUR = 0.38;
+    const kickT = Math.max(0, Math.min(1, 1 - player.animTimer / KICK_DUR));
+    // phases: balance 0→0.12, chamber 0.12→0.35, snap 0.35→0.58, hold 0.58→0.7, retract 0.7→1.0
+    let kickExtend = 0;
+    let chamberLift = 0;
+    if (kickT < 0.12) {
+      chamberLift = (kickT / 0.12) * 0.5; // shift weight
+      kickExtend = 0;
+    } else if (kickT < 0.35) {
+      const p = (kickT - 0.12) / 0.23;
+      chamberLift = 0.5 + p * 0.5; // deep chamber pull-back
+      kickExtend = p * 0.25;
+    } else if (kickT < 0.58) {
+      const p = (kickT - 0.35) / 0.23;
+      chamberLift = 1.0 - p * 0.6;
+      kickExtend = 0.25 + p * 0.85; // explosive snap out
+    } else if (kickT < 0.7) {
+      chamberLift = 0.4;
+      kickExtend = 1.1; // hold extended
+    } else {
+      const p = (kickT - 0.7) / 0.3;
+      chamberLift = 0.4 - p * 0.4;
+      kickExtend = 1.1 - p * 1.1; // retract
+    }
+    frontArmAngle = -0.6 - chamberLift * 0.2 + kickExtend * 0.1; // arms help balance
+    backArmAngle = 0.2 + chamberLift * 0.35 - kickExtend * 0.1;
+    bodyLean = facing * (0.05 + kickExtend * 0.22);
+    bodyBob = -2 - chamberLift * 3 - kickExtend * 2;
+    // Front kicking leg
+    frontLegAngle =
+      kickT < 0.35
+        ? -chamberLift * 0.8 // chamber: pull back and up
+        : -0.8 + kickExtend * 2.1; // explosive forward snap
+    frontKneeBend =
+      kickT < 0.35
+        ? 0.3 + chamberLift * 0.7 // deep knee bend during chamber
+        : Math.max(0, 1.0 - kickExtend * 1.1); // snap straight
+    backLegAngle = -0.1 - chamberLift * 0.1; // standing leg shifts back
+    backKneeBend = 0.15 + chamberLift * 0.15;
   } else {
     // idle: slight natural stance
     frontLegAngle = 0.08;
@@ -1357,6 +1415,31 @@ function drawStickFigure(
   ctx.lineTo(handBX, handBY);
   ctx.stroke();
 
+  // ── Fists at end of each arm ───────────────────────────────────────────────
+  ctx.shadowBlur = 4;
+  ctx.fillStyle = color;
+  const drawFist = (hx: number, hy: number, ex: number, ey: number) => {
+    const ang = Math.atan2(hy - ey, hx - ex);
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    (ctx as any).roundRect(-5, -3.5, 10, 7, 2.5);
+    ctx.fill();
+    // knuckle lines
+    ctx.strokeStyle = colorToRgba(color, 0.55);
+    ctx.lineWidth = 1;
+    for (let ki = 0; ki < 3; ki++) {
+      ctx.beginPath();
+      ctx.moveTo(-2 + ki * 3, -3.5);
+      ctx.lineTo(-2 + ki * 3, 3.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+  drawFist(handFX, handFY, elbowFX, elbowFY);
+  drawFist(handBX, handBY, elbowBX, elbowBY);
+
   // ── Legs with knee joints ──────────────────────────────────────────────────
   ctx.lineWidth = 4.5;
   // front leg
@@ -1384,6 +1467,37 @@ function drawStickFigure(
   ctx.lineTo(kneeBX, kneeBY);
   ctx.lineTo(footBX, footBY);
   ctx.stroke();
+
+  // ── Feet (small rounded shoe shapes at end of each leg) ────────────────────
+  const drawFoot = (
+    fx: number,
+    fy: number,
+    kx: number,
+    ky: number,
+    dir: number,
+  ) => {
+    const ang = Math.atan2(fy - ky, fx - kx);
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.rotate(ang);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 3;
+    // Shoe: wider at toe end, slightly raised heel
+    ctx.beginPath();
+    (ctx as any).roundRect(0, -3, 11 * dir, 6, [3, 3, 2, 2]);
+    ctx.fill();
+    // Sole line
+    ctx.strokeStyle = colorToRgba(color, 0.5);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 3);
+    ctx.lineTo(10 * dir, 3);
+    ctx.stroke();
+    ctx.restore();
+  };
+  drawFoot(footFX, footFY, kneeFX, kneeFY, facing);
+  drawFoot(footBX, footBY, kneeBX, kneeBY, facing);
 
   ctx.shadowBlur = 0;
   drawCharacterSkin(
@@ -1433,22 +1547,6 @@ function drawStickFigure(
     ctx.globalAlpha = 0.1;
     ctx.fillStyle = "#80c8ff";
     ctx.fill();
-    ctx.restore();
-  }
-
-  // Kick extended leg visual
-  if (animState === "kick") {
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
-    // Draw extended front leg
-    ctx.beginPath();
-    ctx.moveTo(cx, hipY);
-    ctx.lineTo(cx + facing * 40, feet - 10);
-    ctx.stroke();
     ctx.restore();
   }
 }
@@ -1558,6 +1656,64 @@ function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]) {
   }
   ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
+}
+
+function drawHitFlashes(ctx: CanvasRenderingContext2D, flashes: HitFlash[]) {
+  for (const f of flashes) {
+    const t = f.life / f.maxLife; // 1 → 0
+    const expandT = 1 - t; // 0 → 1
+    const radius = f.radius * (1 + expandT * 1.6);
+    const alpha = t * 0.9;
+
+    // Outer ring burst
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.6;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3 + (1 - t) * 4;
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Inner glow fill
+    const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, radius * 0.6);
+    grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+    grad.addColorStop(
+      0.4,
+      f.color +
+        Math.floor(alpha * 200)
+          .toString(16)
+          .padStart(2, "0"),
+    );
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, radius * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Star spikes
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = 12;
+    const spikes = f.type === "kick" ? 8 : 6;
+    const outerR = radius * 0.9;
+    const innerR = radius * 0.25;
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+      const angle = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? outerR : innerR;
+      if (i === 0)
+        ctx.moveTo(f.x + Math.cos(angle) * r, f.y + Math.sin(angle) * r);
+      else ctx.lineTo(f.x + Math.cos(angle) * r, f.y + Math.sin(angle) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
 }
 
 function drawHUD(ctx: CanvasRenderingContext2D, state: GameState) {
@@ -3211,6 +3367,7 @@ export function renderFrame(
   drawBackground(ctx, tick, state.bgColor);
   drawPlatforms(ctx, state.platforms);
   drawParticles(ctx, state.particles);
+  drawHitFlashes(ctx, state.hitFlashes ?? []);
   drawProjectiles(ctx, state.projectiles, tick);
   for (const player of state.players) {
     drawStickFigure(ctx, player, tick);

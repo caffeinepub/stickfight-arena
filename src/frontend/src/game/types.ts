@@ -226,6 +226,16 @@ export interface Particle {
   size: number;
 }
 
+export interface HitFlash {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  color: string;
+  radius: number;
+  type: "punch" | "kick";
+}
+
 export interface Platform {
   x: number;
   y: number;
@@ -240,6 +250,7 @@ export interface GameState {
   platforms: Platform[];
   projectiles: Projectile[];
   particles: Particle[];
+  hitFlashes: HitFlash[];
   phase: GamePhase;
   round: number;
   maxRounds: number;

@@ -3,6 +3,7 @@ import type {
   Controls,
   GamePhase,
   GameState,
+  HitFlash,
   Particle,
   Platform,
   Player,
@@ -18,11 +19,11 @@ const JUMP_FORCE = -13.5;
 const ATTACK_RANGE = 72;
 const KICK_DAMAGE = 8;
 const KICK_RANGE = 50;
-const KICK_DURATION = 0.2;
-const KICK_COOLDOWN = 0.35;
+const KICK_DURATION = 0.38;
+const KICK_COOLDOWN = 0.55;
 const ATTACK_DAMAGE = 12;
-const ATTACK_DURATION = 0.25;
-const ATTACK_COOLDOWN = 0.5;
+const ATTACK_DURATION = 0.42;
+const ATTACK_COOLDOWN = 0.65;
 const SPECIAL_COOLDOWN = 6;
 const DASH_SPEED = 14;
 const DASH_DURATION = 0.18;
@@ -55,6 +56,78 @@ export function spawnParticles(
       life: rand(0.4, 0.9),
       maxLife: rand(0.4, 0.9),
       size: rand(2, 6),
+    });
+  }
+}
+
+export function spawnHitFlash(
+  flashes: HitFlash[],
+  x: number,
+  y: number,
+  color: string,
+  type: "punch" | "kick",
+): void {
+  flashes.push({
+    x,
+    y,
+    life: 0.18,
+    maxLife: 0.18,
+    color,
+    radius: type === "kick" ? 38 : 28,
+    type,
+  });
+}
+
+export function spawnImpactParticles(
+  particles: Particle[],
+  x: number,
+  y: number,
+  color: string,
+  type: "punch" | "kick",
+): void {
+  const count = type === "kick" ? 20 : 14;
+  const speed = type === "kick" ? 9 : 7;
+  // Main burst
+  for (let i = 0; i < count; i++) {
+    const angle = rand(0, Math.PI * 2);
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * rand(2, speed),
+      vy: Math.sin(angle) * rand(2, speed) - rand(1, 4),
+      color,
+      life: rand(0.3, 0.7),
+      maxLife: rand(0.3, 0.7),
+      size: rand(3, 8),
+    });
+  }
+  // White core sparks
+  for (let i = 0; i < 8; i++) {
+    const angle = rand(0, Math.PI * 2);
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * rand(4, speed * 1.4),
+      vy: Math.sin(angle) * rand(4, speed * 1.4) - 2,
+      color: "#ffffff",
+      life: rand(0.15, 0.35),
+      maxLife: rand(0.15, 0.35),
+      size: rand(2, 5),
+    });
+  }
+  // Star-like streaks (thin fast)
+  for (let i = 0; i < 6; i++) {
+    const angle = rand(0, Math.PI * 2);
+    const spd = rand(speed * 1.2, speed * 2.5);
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      color: "#ffee44",
+      life: rand(0.1, 0.25),
+      maxLife: rand(0.1, 0.25),
+      size: rand(1.5, 3),
     });
   }
 }
@@ -133,6 +206,7 @@ export function createGameState(
     platforms: platforms ?? makePlatforms(),
     projectiles: [],
     particles: [],
+    hitFlashes: [],
     phase: "fighting",
     round: initialRound,
     maxRounds: 3,
@@ -157,6 +231,7 @@ export function resetRound(state: GameState): GameState {
     players: [makePlayer(1, p1.customization), makePlayer(2, p2.customization)],
     projectiles: [],
     particles: [],
+    hitFlashes: [],
     phase: "fighting",
     timer: 60,
     roundEndTimer: 0,
@@ -1199,6 +1274,7 @@ function checkAttackHit(
   attacker: Player,
   defender: Player,
   particles: Particle[],
+  hitFlashes: HitFlash[],
 ): [Player, Player] {
   if (
     !attacker.isAttacking ||
@@ -1239,13 +1315,19 @@ function checkAttackHit(
       isAttacking: false,
       attackHitbox: null,
     };
-    spawnParticles(
+    spawnImpactParticles(
       particles,
       defender.pos.x,
       defender.pos.y - PLAYER_H * 0.5,
-      "#ff4444",
-      8,
-      4,
+      PLAYER_COLOR_HEX[attacker.customization.color],
+      "punch",
+    );
+    spawnHitFlash(
+      hitFlashes,
+      defender.pos.x,
+      defender.pos.y - PLAYER_H * 0.5,
+      PLAYER_COLOR_HEX[attacker.customization.color],
+      "punch",
     );
     playHit();
     return [newAttacker, newDefender];
@@ -1715,6 +1797,12 @@ function updateProjectiles(
   return { projectiles: updated, players: [p1, p2] };
 }
 
+function updateHitFlashes(flashes: HitFlash[], dt: number): HitFlash[] {
+  return flashes
+    .map((f) => ({ ...f, life: f.life - dt }))
+    .filter((f) => f.life > 0);
+}
+
 function updateParticles(particles: Particle[], dt: number): Particle[] {
   return particles
     .map((p) => ({
@@ -1809,6 +1897,7 @@ export function updateGame(
   }
 
   const particles = [...state.particles];
+  const hitFlashes: HitFlash[] = [...(state.hitFlashes ?? [])];
   const projectiles = [...state.projectiles];
   let [p1, p2] = state.players;
 
@@ -1838,8 +1927,8 @@ export function updateGame(
   }
 
   // attack hits
-  let [np1, np2] = checkAttackHit(p1, p2, particles);
-  [np2, np1] = checkAttackHit(np2, np1, particles);
+  let [np1, np2] = checkAttackHit(p1, p2, particles, hitFlashes);
+  [np2, np1] = checkAttackHit(np2, np1, particles, hitFlashes);
   p1 = np1;
   p2 = np2;
 
@@ -1857,6 +1946,20 @@ export function updateGame(
     ) {
       p2 = dealDamage(p1, p2, KICK_DAMAGE, particles, p1.facing * 5, -10);
       p1 = { ...p1, isKicking: false, kickHitbox: null };
+      spawnImpactParticles(
+        particles,
+        p2.pos.x,
+        p2.pos.y - 50,
+        PLAYER_COLOR_HEX[p1.customization.color],
+        "kick",
+      );
+      spawnHitFlash(
+        hitFlashes,
+        p2.pos.x,
+        p2.pos.y - 50,
+        PLAYER_COLOR_HEX[p1.customization.color],
+        "kick",
+      );
       playHit();
     }
   }
@@ -1873,6 +1976,20 @@ export function updateGame(
     ) {
       p1 = dealDamage(p2, p1, KICK_DAMAGE, particles, p2.facing * 5, -10);
       p2 = { ...p2, isKicking: false, kickHitbox: null };
+      spawnImpactParticles(
+        particles,
+        p1.pos.x,
+        p1.pos.y - 50,
+        PLAYER_COLOR_HEX[p2.customization.color],
+        "kick",
+      );
+      spawnHitFlash(
+        hitFlashes,
+        p1.pos.x,
+        p1.pos.y - 50,
+        PLAYER_COLOR_HEX[p2.customization.color],
+        "kick",
+      );
       playHit();
     }
   }
@@ -1966,6 +2083,7 @@ export function updateGame(
     players: [p1, p2],
     projectiles: projResult.projectiles,
     particles: updatedParticles,
+    hitFlashes: updateHitFlashes(hitFlashes, dt),
     timer,
     phase,
     p1Wins,
