@@ -42,6 +42,18 @@ export type Hat =
 
 export type CharacterSkin = "none" | "bizSuit" | "jobApp";
 
+export type Shoe =
+  | "none"
+  | "sneakers"
+  | "boots"
+  | "sandals"
+  | "cleats"
+  | "heels"
+  | "skates"
+  | "flipFlops"
+  | "slippers"
+  | "rocketBoots";
+
 export type SpecialAbility =
   | "dash"
   | "groundSlam"
@@ -116,6 +128,7 @@ export interface PlayerCustomization {
   hat: Hat;
   special: SpecialAbility;
   character: CharacterSkin;
+  shoe: Shoe;
 }
 
 export interface Vec2 {

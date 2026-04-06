@@ -5,6 +5,7 @@ import type {
   Hat,
   PlayerColor,
   PlayerCustomization,
+  Shoe,
   SpecialAbility,
 } from "@/game/types";
 import { PLAYER_COLOR_HEX } from "@/game/types";
@@ -15,6 +16,7 @@ interface CustomizeScreenProps {
   mode: GameMode;
   unlockedHats: Hat[];
   unlockedAbilities: SpecialAbility[];
+  unlockedShoes: Shoe[];
   onReady: (p1: PlayerCustomization, p2: PlayerCustomization) => void;
   onBack: () => void;
 }
@@ -69,6 +71,64 @@ const ALL_HATS: { id: Hat; label: string; emoji: string }[] = [
   { id: "beanie", label: "Beanie", emoji: "🧤" },
   { id: "deerstalker", label: "Deerstalker", emoji: "🔍" },
   { id: "laurel", label: "Laurel", emoji: "🌿" },
+];
+
+const ALL_SHOES: { id: Shoe; label: string; emoji: string; desc: string }[] = [
+  { id: "none", label: "Bare Feet", emoji: "🦶", desc: "Natural and free" },
+  {
+    id: "sneakers",
+    label: "Sneakers",
+    emoji: "👟",
+    desc: "Classic white kicks with colored stripe",
+  },
+  {
+    id: "boots",
+    label: "Boots",
+    emoji: "👢",
+    desc: "Tough dark brown boots for heavy stomping",
+  },
+  {
+    id: "sandals",
+    label: "Sandals",
+    emoji: "🩴",
+    desc: "Breezy tan sandals — fight in style",
+  },
+  {
+    id: "cleats",
+    label: "Cleats",
+    emoji: "⚽",
+    desc: "Dark cleats with grip spikes on the sole",
+  },
+  {
+    id: "heels",
+    label: "Heels",
+    emoji: "👠",
+    desc: "Pink stilettos — deadly and fabulous",
+  },
+  {
+    id: "skates",
+    label: "Ice Skates",
+    emoji: "⛸️",
+    desc: "Light blue blades for slippery combat",
+  },
+  {
+    id: "flipFlops",
+    label: "Flip Flops",
+    emoji: "🩴",
+    desc: "Bright yellow — casual chaos on the battlefield",
+  },
+  {
+    id: "slippers",
+    label: "Slippers",
+    emoji: "🥿",
+    desc: "Soft pink slippers — comfort fighter",
+  },
+  {
+    id: "rocketBoots",
+    label: "Rocket Boots",
+    emoji: "🚀",
+    desc: "Orange boots with afterburner flames",
+  },
 ];
 
 const ALL_SPECIALS: {
@@ -379,8 +439,24 @@ const ALL_SPECIALS: {
   },
 ];
 
+// Shoe color map for the preview SVG
+const SHOE_COLORS: Record<Shoe, string> = {
+  none: "", // uses body color
+  sneakers: "#ffffff",
+  boots: "#5c3d1e",
+  sandals: "#c8a87a",
+  cleats: "#333333",
+  heels: "#ff80b0",
+  skates: "#aaddff",
+  flipFlops: "#ffcc00",
+  slippers: "#e8b4b8",
+  rocketBoots: "#ff6600",
+};
+
 function StickPreview({ custom }: { custom: PlayerCustomization }) {
   const color = PLAYER_COLOR_HEX[custom.color];
+  const shoeColor =
+    custom.shoe === "none" ? color : (SHOE_COLORS[custom.shoe] ?? color);
   return (
     <svg
       width="60"
@@ -477,7 +553,6 @@ function StickPreview({ custom }: { custom: PlayerCustomization }) {
           />
         </>
       )}
-      {/* New hats - simple shapes */}
       {custom.hat === "beret" && (
         <ellipse cx="30" cy="16" rx="13" ry="6" fill="#c04040" />
       )}
@@ -815,6 +890,80 @@ function StickPreview({ custom }: { custom: PlayerCustomization }) {
         strokeWidth="2.5"
         strokeLinecap="round"
       />
+      {/* Left shoe */}
+      <rect
+        x="12"
+        y="70"
+        width="11"
+        height="5"
+        rx="2"
+        fill={shoeColor}
+        stroke={custom.shoe === "none" ? "none" : "rgba(0,0,0,0.3)"}
+        strokeWidth="0.5"
+      />
+      {custom.shoe === "sneakers" && (
+        <line x1="13" y1="72" x2="22" y2="72" stroke={color} strokeWidth="1" />
+      )}
+      {custom.shoe === "heels" && (
+        <line
+          x1="12"
+          y1="75"
+          x2="12"
+          y2="70"
+          stroke="#ff80b0"
+          strokeWidth="1.5"
+        />
+      )}
+      {custom.shoe === "skates" && (
+        <line
+          x1="11"
+          y1="76"
+          x2="24"
+          y2="76"
+          stroke="#88bbdd"
+          strokeWidth="1"
+        />
+      )}
+      {custom.shoe === "rocketBoots" && (
+        <ellipse cx="17" cy="76" rx="3" ry="1.5" fill="#ff4400" opacity="0.8" />
+      )}
+      {/* Right shoe */}
+      <rect
+        x="32"
+        y="70"
+        width="11"
+        height="5"
+        rx="2"
+        fill={shoeColor}
+        stroke={custom.shoe === "none" ? "none" : "rgba(0,0,0,0.3)"}
+        strokeWidth="0.5"
+      />
+      {custom.shoe === "sneakers" && (
+        <line x1="33" y1="72" x2="42" y2="72" stroke={color} strokeWidth="1" />
+      )}
+      {custom.shoe === "heels" && (
+        <line
+          x1="43"
+          y1="75"
+          x2="43"
+          y2="70"
+          stroke="#ff80b0"
+          strokeWidth="1.5"
+        />
+      )}
+      {custom.shoe === "skates" && (
+        <line
+          x1="31"
+          y1="76"
+          x2="44"
+          y2="76"
+          stroke="#88bbdd"
+          strokeWidth="1"
+        />
+      )}
+      {custom.shoe === "rocketBoots" && (
+        <ellipse cx="37" cy="76" rx="3" ry="1.5" fill="#ff4400" opacity="0.8" />
+      )}
     </svg>
   );
 }
@@ -846,6 +995,7 @@ function PlayerCustomizer({
   custom,
   unlockedHats,
   unlockedAbilities,
+  unlockedShoes,
   onChange,
 }: {
   playerId: 1 | 2;
@@ -853,6 +1003,7 @@ function PlayerCustomizer({
   custom: PlayerCustomization;
   unlockedHats: Hat[];
   unlockedAbilities: SpecialAbility[];
+  unlockedShoes: Shoe[];
   onChange: (c: PlayerCustomization) => void;
 }) {
   const accentColor = playerId === 1 ? "#e05050" : "#5080e0";
@@ -943,6 +1094,68 @@ function PlayerCustomizer({
                 title={!isUnlocked ? "Win rounds to unlock" : h.label}
               >
                 {!isUnlocked ? "🔒" : h.emoji} {h.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Shoe Shop */}
+      <div>
+        <p
+          className="text-xs font-semibold mb-2 uppercase tracking-wider flex items-center gap-2"
+          style={{ color: "#60c8ff" }}
+        >
+          <span>👟</span> Shoe Shop
+          <span
+            className="text-xs font-bold px-1.5 py-0.5 rounded"
+            style={{
+              background: "rgba(96,200,255,0.15)",
+              color: "#60c8ff",
+              border: "1px solid rgba(96,200,255,0.4)",
+              fontSize: "0.6rem",
+            }}
+          >
+            WIN TO UNLOCK
+          </span>
+        </p>
+        <div className="flex gap-2 flex-wrap max-h-36 overflow-y-auto pr-1">
+          {ALL_SHOES.map((sh) => {
+            const isUnlocked = unlockedShoes.includes(sh.id);
+            return (
+              <button
+                key={sh.id}
+                type="button"
+                data-ocid={`customize.p${playerId}_shoe`}
+                onClick={() =>
+                  isUnlocked && onChange({ ...custom, shoe: sh.id })
+                }
+                disabled={!isUnlocked}
+                className="px-2 py-1 rounded text-sm font-medium transition-all relative"
+                style={{
+                  background: !isUnlocked
+                    ? "rgba(255,255,255,0.02)"
+                    : custom.shoe === sh.id
+                      ? "rgba(96,200,255,0.2)"
+                      : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${
+                    !isUnlocked
+                      ? "rgba(255,255,255,0.06)"
+                      : custom.shoe === sh.id
+                        ? "#60c8ff"
+                        : "rgba(255,255,255,0.1)"
+                  }`,
+                  color: !isUnlocked
+                    ? "rgba(255,255,255,0.25)"
+                    : custom.shoe === sh.id
+                      ? "#60c8ff"
+                      : "#aaa",
+                  cursor: isUnlocked ? "pointer" : "not-allowed",
+                  fontSize: "0.75rem",
+                }}
+                title={!isUnlocked ? "Win rounds to unlock" : sh.desc}
+              >
+                {!isUnlocked ? "🔒" : sh.emoji} {sh.label}
               </button>
             );
           })}
@@ -1073,6 +1286,7 @@ export default function CustomizeScreen({
   mode,
   unlockedHats,
   unlockedAbilities,
+  unlockedShoes,
   onReady,
   onBack,
 }: CustomizeScreenProps) {
@@ -1081,12 +1295,14 @@ export default function CustomizeScreen({
     hat: "none",
     special: "dash",
     character: "none",
+    shoe: "none",
   });
   const [p2, setP2] = useState<PlayerCustomization>({
     color: "blue",
     hat: "crown",
     special: "energyBlast",
     character: "none",
+    shoe: "none",
   });
 
   return (
@@ -1108,7 +1324,7 @@ export default function CustomizeScreen({
                 : "Both players choose their fighter"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              🔒 Win rounds to unlock more hats and abilities!
+              🔒 Win rounds to unlock more hats, shoes and abilities!
             </p>
           </div>
 
@@ -1119,6 +1335,7 @@ export default function CustomizeScreen({
               custom={p1}
               unlockedHats={unlockedHats}
               unlockedAbilities={unlockedAbilities}
+              unlockedShoes={unlockedShoes}
               onChange={setP1}
             />
             <PlayerCustomizer
@@ -1127,6 +1344,7 @@ export default function CustomizeScreen({
               custom={p2}
               unlockedHats={unlockedHats}
               unlockedAbilities={unlockedAbilities}
+              unlockedShoes={unlockedShoes}
               onChange={setP2}
             />
           </div>

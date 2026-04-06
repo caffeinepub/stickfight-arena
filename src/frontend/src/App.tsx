@@ -15,6 +15,7 @@ import type {
   MapDefinition,
   Platform,
   PlayerCustomization,
+  Shoe,
   SpecialAbility,
 } from "@/game/types";
 import { useState } from "react";
@@ -35,12 +36,14 @@ const DEFAULT_P1: PlayerCustomization = {
   hat: "none",
   special: "dash",
   character: "none",
+  shoe: "none",
 };
 const DEFAULT_P2: PlayerCustomization = {
   color: "blue",
   hat: "crown",
   special: "energyBlast",
   character: "none",
+  shoe: "none",
 };
 
 const initialUnlocked = loadUnlocked();
@@ -58,6 +61,9 @@ export default function App() {
   const [unlockedHats, setUnlockedHats] = useState<Hat[]>(initialUnlocked.hats);
   const [unlockedAbilities, setUnlockedAbilities] = useState<SpecialAbility[]>(
     initialUnlocked.abilities,
+  );
+  const [unlockedShoes, setUnlockedShoes] = useState<Shoe[]>(
+    initialUnlocked.shoes,
   );
   const [gameKey, setGameKey] = useState(0);
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(
@@ -133,10 +139,12 @@ export default function App() {
   const handleLootBoxDone = (
     newHats: Hat[],
     newAbilities: SpecialAbility[],
+    newShoes: Shoe[],
   ) => {
     setUnlockedHats(newHats);
     setUnlockedAbilities(newAbilities);
-    saveUnlocked(newHats, newAbilities);
+    setUnlockedShoes(newShoes);
+    saveUnlocked(newHats, newAbilities, newShoes);
     setScreen("game");
   };
 
@@ -172,9 +180,10 @@ export default function App() {
       {screen === "cheats" && (
         <CheatCodeScreen
           onClose={() => setScreen("menu")}
-          onCheatActivated={(newHats, newAbilities) => {
+          onCheatActivated={(newHats, newAbilities, newShoes) => {
             setUnlockedHats(newHats);
             setUnlockedAbilities(newAbilities);
+            setUnlockedShoes(newShoes);
             setScreen("menu");
           }}
         />
@@ -184,6 +193,7 @@ export default function App() {
           mode={mode}
           unlockedHats={unlockedHats}
           unlockedAbilities={unlockedAbilities}
+          unlockedShoes={unlockedShoes}
           onReady={handleCustomizeReady}
           onBack={() => setScreen("menu")}
         />
@@ -225,6 +235,7 @@ export default function App() {
           mode={mode}
           unlockedHats={unlockedHats}
           unlockedAbilities={unlockedAbilities}
+          unlockedShoes={unlockedShoes}
           onDone={handleLootBoxDone}
         />
       )}

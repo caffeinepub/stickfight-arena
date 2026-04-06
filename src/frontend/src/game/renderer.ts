@@ -6,6 +6,7 @@ import type {
   Platform,
   Player,
   Projectile,
+  Shoe,
   SpecialAbility,
 } from "./types";
 import { PLAYER_COLOR_HEX } from "./types";
@@ -1219,39 +1220,90 @@ function drawStickFigure(
     frontKneeBend = 0.15 + Math.max(0, walkCycle) * 0.35;
     backKneeBend = 0.15 + Math.max(0, -walkCycle) * 0.35;
   } else if (animState === "attack") {
-    // Smooth multi-frame punch: wind-up → step → snap extend → follow through → retract
-    const ATTACK_DUR = 0.42;
+    // PUNCH: wind-up → cock → explosive snap → full extension → retract → recover
+    // Phases designed for maximum visual clarity and impact
+    const ATTACK_DUR = 1.0;
     const atkT = Math.max(0, Math.min(1, 1 - player.animTimer / ATTACK_DUR));
-    // phases: pull-back 0→0.18, step 0.18→0.32, snap 0.32→0.55, hold 0.55→0.68, retract 0.68→1.0
+
+    const ease = (t: number) => t * t * (3 - 2 * t);
+    const easeIn = (t: number) => t * t * t;
+    const easeOut = (t: number) => 1 - (1 - t) * (1 - t) * (1 - t);
+    const easeInStrong = (t: number) => t * t * t * t * t; // very aggressive acceleration
+
+    const phaseP = (start: number, end: number, fn = ease) => {
+      const raw = Math.max(0, Math.min(1, (atkT - start) / (end - start)));
+      return fn(raw);
+    };
+
+    // ── punchExtend: -1 = fully cocked back, 0 = neutral, +2 = fully extended ──
     let punchExtend = 0;
-    let shoulderDip = 0;
-    if (atkT < 0.18) {
-      punchExtend = -(atkT / 0.18) * 0.55; // wind-up pull back
-      shoulderDip = (atkT / 0.18) * 0.3;
-    } else if (atkT < 0.32) {
-      const p = (atkT - 0.18) / 0.14;
-      punchExtend = -0.55 + p * 0.3; // step-in
-      shoulderDip = 0.3 - p * 0.1;
-    } else if (atkT < 0.55) {
-      const p = (atkT - 0.32) / 0.23;
-      punchExtend = -0.25 + p * 1.95; // explosive snap forward
-      shoulderDip = 0.2 - p * 0.2;
-    } else if (atkT < 0.68) {
-      punchExtend = 1.7; // hold at full extension
-      shoulderDip = 0;
+    if (atkT < 0.12) {
+      // Ready: slight forward nod
+      punchExtend = phaseP(0, 0.12) * 0.08;
+    } else if (atkT < 0.28) {
+      // Deep pull-back: fist goes WAY back behind the body — big windup
+      punchExtend = 0.08 - phaseP(0.12, 0.28, easeIn) * 1.08; // reaches -1.0
+    } else if (atkT < 0.38) {
+      // Coil hold: arm fully cocked, body twisted and crouched
+      punchExtend = -1.0 + phaseP(0.28, 0.38, ease) * 0.1; // slight shuffle
+    } else if (atkT < 0.52) {
+      // EXPLOSIVE SNAP: fastest phase — arm rockets from cocked to full extension
+      punchExtend = -0.9 + phaseP(0.38, 0.52, easeInStrong) * 2.9; // hits +2.0
+    } else if (atkT < 0.64) {
+      // Full extension hold — very slight micro-oscillation (impact rebound)
+      const rebound =
+        Math.sin((atkT - 0.52) * 80) * 0.04 * (1 - phaseP(0.52, 0.64));
+      punchExtend = 2.0 + rebound;
+    } else if (atkT < 0.8) {
+      // Retract: snaps back quickly with ease-out
+      punchExtend = 2.0 - phaseP(0.64, 0.8, easeOut) * 2.5;
     } else {
-      const p = (atkT - 0.68) / 0.32;
-      punchExtend = 1.7 - p * 2.15; // retract
+      // Recover to neutral boxing stance
+      punchExtend = -0.5 + phaseP(0.8, 1.0, ease) * 0.55;
     }
-    frontArmAngle = -0.45 + punchExtend * 1.05;
-    backArmAngle = 0.45 - punchExtend * 0.3 + shoulderDip * 0.2;
-    frontElbowBend =
-      atkT < 0.32 ? 0.6 : Math.max(0.02, 0.6 - punchExtend * 0.55);
-    backElbowBend = 0.55 + shoulderDip * 0.2;
-    bodyLean = facing * (0.1 + punchExtend * 0.18 + shoulderDip * 0.1);
-    bodyBob = -punchExtend * 6 + shoulderDip * 4;
-    frontLegAngle = 0.2 + (atkT > 0.18 ? 0.12 : 0); // step forward
-    backLegAngle = -0.15;
+
+    // ── Torso coil: shoulder winds back then explosively unwinds ──────────
+    const torsoWindup =
+      atkT < 0.38
+        ? phaseP(0.12, 0.38, ease) // coiling: 0 → 1
+        : 1 - phaseP(0.38, 0.8, ease); // uncoiling: 1 → 0
+    const torsoTwist = torsoWindup * 0.55; // ~31° — much more visible
+
+    // ── Shoulder dip (crouch during windup) ───────────────────────────────
+    const shoulderDip =
+      atkT < 0.38
+        ? phaseP(0.12, 0.38, ease) * 0.5 // crouch down while winding up
+        : (1 - phaseP(0.38, 0.64, ease)) * 0.5; // rise through snap
+
+    // ── Elbow bend: nearly fully bent at wind-up, straight at extension ───
+    const elbowNorm = Math.max(0, Math.min(1, (punchExtend + 1.0) / 3.0));
+    frontElbowBend = 1.1 - ease(elbowNorm) * 1.08; // 1.1 → 0.02 (very bent to nearly straight)
+
+    // ── Back arm: swings back hard as front arm shoots forward ────────────
+    backElbowBend =
+      0.35 + shoulderDip * 0.3 + ease(Math.max(0, punchExtend) / 2.0) * 0.35;
+
+    // ── Arm angles ────────────────────────────────────────────────────────
+    frontArmAngle = -0.42 + punchExtend * 1.0;
+    // Back arm pulls aggressively backward when front arm extends (boxing counter-swing)
+    backArmAngle =
+      0.55 - punchExtend * 0.55 + shoulderDip * 0.3 + torsoTwist * 0.4;
+
+    // ── Body lean: leans into the punch ───────────────────────────────────
+    const leanBase = 0.06 + Math.max(0, punchExtend) * 0.22 + torsoTwist * 0.18;
+    bodyLean = facing * Math.max(0.04, leanBase);
+
+    // ── Body bob ──────────────────────────────────────────────────────────
+    bodyBob = shoulderDip * 10 - Math.max(0, punchExtend) * 6;
+
+    // ── Legs: boxing power stance ─────────────────────────────────────────
+    const drive = atkT > 0.38 ? phaseP(0.38, 0.64, ease) : 0;
+    const release = atkT > 0.64 ? phaseP(0.64, 0.9, ease) : 0;
+    const driveLvl = drive - release * drive;
+    frontLegAngle = 0.18 + driveLvl * 0.28 + torsoTwist * 0.1;
+    backLegAngle = -0.2 - driveLvl * 0.18 - torsoTwist * 0.08;
+    frontKneeBend = 0.2 + shoulderDip * 0.25 + driveLvl * 0.2;
+    backKneeBend = 0.15 + driveLvl * 0.1;
   } else if (animState === "special") {
     frontArmAngle = -1.4; // both arms raised
     backArmAngle = -0.9;
@@ -1286,46 +1338,82 @@ function drawStickFigure(
     bodyLean = facing * 0.05;
     bodyBob = -2;
   } else if (animState === "kick") {
-    // Multi-frame kick: balance → deep chamber → explosive extend → hold → retract
-    const KICK_DUR = 0.38;
+    // KICK: weight shift → deep knee chamber → EXPLOSIVE extension → hold → retract
+    const KICK_DUR = 1.1;
     const kickT = Math.max(0, Math.min(1, 1 - player.animTimer / KICK_DUR));
-    // phases: balance 0→0.12, chamber 0.12→0.35, snap 0.35→0.58, hold 0.58→0.7, retract 0.7→1.0
-    let kickExtend = 0;
+
+    const easeKick = (t: number) => t * t * (3 - 2 * t);
+    const easeInK = (t: number) => t * t * t;
+    const easeOutK = (t: number) => 1 - (1 - t) * (1 - t) * (1 - t);
+    const easeInFast = (t: number) => t * t * t * t; // fast buildup
+
+    const kPhase = (s: number, e: number, fn = easeKick) =>
+      fn(Math.max(0, Math.min(1, (kickT - s) / (e - s))));
+
+    // ── chamberLift: 0 = foot on ground, 1 = knee at hip height ─────────
     let chamberLift = 0;
-    if (kickT < 0.12) {
-      chamberLift = (kickT / 0.12) * 0.5; // shift weight
+    // ── kickExtend: 0 = knee up, 1 = leg fully extended ──────────────────
+    let kickExtend = 0;
+
+    if (kickT < 0.1) {
+      // Stance: slight weight shift back, planting support foot
+      chamberLift = 0;
       kickExtend = 0;
-    } else if (kickT < 0.35) {
-      const p = (kickT - 0.12) / 0.23;
-      chamberLift = 0.5 + p * 0.5; // deep chamber pull-back
-      kickExtend = p * 0.25;
-    } else if (kickT < 0.58) {
-      const p = (kickT - 0.35) / 0.23;
-      chamberLift = 1.0 - p * 0.6;
-      kickExtend = 0.25 + p * 0.85; // explosive snap out
-    } else if (kickT < 0.7) {
-      chamberLift = 0.4;
-      kickExtend = 1.1; // hold extended
+    } else if (kickT < 0.3) {
+      // Hip load & deep chamber: knee rises HIGH to waist/chest level
+      chamberLift = kPhase(0.1, 0.3, easeInK) * 1.6; // goes well past "hip height"
+      kickExtend = 0;
+    } else if (kickT < 0.38) {
+      // Peak chamber hold — knee at maximum height, body coiled
+      chamberLift = 1.6;
+      kickExtend = 0;
+    } else if (kickT < 0.52) {
+      // EXPLOSIVE snap: leg rockets from chamber to full extension
+      chamberLift = 1.6 - kPhase(0.38, 0.52, easeInFast) * 1.15; // drops as leg straightens
+      kickExtend = kPhase(0.38, 0.52, easeInFast) * 2.0; // 0 → 2.0 (over-extended for impact)
+    } else if (kickT < 0.64) {
+      // Impact hold — leg nearly straight, slight vibration
+      const vib =
+        Math.sin((kickT - 0.52) * 70) * 0.045 * (1 - kPhase(0.52, 0.64));
+      chamberLift = 0.45 + vib;
+      kickExtend = 2.0 + vib;
+    } else if (kickT < 0.82) {
+      // Retract: knee pulls back, leg folds back under
+      chamberLift = 0.45 - kPhase(0.64, 0.82, easeOutK) * 0.45;
+      kickExtend = 2.0 - kPhase(0.64, 0.82, easeOutK) * 2.0;
     } else {
-      const p = (kickT - 0.7) / 0.3;
-      chamberLift = 0.4 - p * 0.4;
-      kickExtend = 1.1 - p * 1.1; // retract
+      // Recover to stance
+      chamberLift = 0;
+      kickExtend = 0;
     }
-    frontArmAngle = -0.6 - chamberLift * 0.2 + kickExtend * 0.1; // arms help balance
-    backArmAngle = 0.2 + chamberLift * 0.35 - kickExtend * 0.1;
-    bodyLean = facing * (0.05 + kickExtend * 0.22);
-    bodyBob = -2 - chamberLift * 3 - kickExtend * 2;
-    // Front kicking leg
-    frontLegAngle =
-      kickT < 0.35
-        ? -chamberLift * 0.8 // chamber: pull back and up
-        : -0.8 + kickExtend * 2.1; // explosive forward snap
-    frontKneeBend =
-      kickT < 0.35
-        ? 0.3 + chamberLift * 0.7 // deep knee bend during chamber
-        : Math.max(0, 1.0 - kickExtend * 1.1); // snap straight
-    backLegAngle = -0.1 - chamberLift * 0.1; // standing leg shifts back
-    backKneeBend = 0.15 + chamberLift * 0.15;
+
+    // ── Arms: spread wide for balance when kicking ────────────────────────
+    const balanceArm = Math.min(1, chamberLift / 1.6);
+    frontArmAngle = -0.45 - balanceArm * 0.7 + kickExtend * 0.05; // front arm swings back/up
+    backArmAngle = -0.1 + balanceArm * 0.8 - kickExtend * 0.15; // back arm swings forward/up
+    frontElbowBend = 0.25 + balanceArm * 0.2;
+    backElbowBend = 0.25 + balanceArm * 0.2;
+
+    // ── Body leans into the kick at extension ─────────────────────────────
+    bodyLean = facing * (0.05 + kickExtend * 0.32);
+    bodyBob = -chamberLift * 5 - kickExtend * 4;
+
+    // ── Kicking leg (front leg) ───────────────────────────────────────────
+    // Before snap: leg pulls up tightly (negative angle = forward/up)
+    // After snap: leg shoots out forward
+    if (kickT < 0.38) {
+      // Chamber: knee pulls up tight — knee bend at maximum
+      frontLegAngle = -(chamberLift * 0.9);
+      frontKneeBend = 0.3 + (chamberLift / 1.6) * 1.3; // very tight bend at peak
+    } else {
+      // Extension: angle goes positive (forward), bend releases to near zero
+      frontLegAngle = -0.9 + kPhase(0.38, 0.64, easeInFast) * 3.6; // -0.9 → 2.7
+      frontKneeBend = Math.max(0.02, 1.6 - kickExtend * 1.0); // nearly straight at full
+    }
+
+    // ── Support leg (back leg): slight bend for balance ───────────────────
+    backLegAngle = -0.12 - balanceArm * 0.15;
+    backKneeBend = 0.2 + balanceArm * 0.15;
   } else {
     // idle: slight natural stance
     frontLegAngle = 0.08;
@@ -1469,6 +1557,7 @@ function drawStickFigure(
   ctx.stroke();
 
   // ── Feet (small rounded shoe shapes at end of each leg) ────────────────────
+  const shoe: Shoe = customization.shoe ?? "none";
   const drawFoot = (
     fx: number,
     fy: number,
@@ -1480,20 +1569,144 @@ function drawStickFigure(
     ctx.save();
     ctx.translate(fx, fy);
     ctx.rotate(ang);
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
     ctx.shadowBlur = 3;
-    // Shoe: wider at toe end, slightly raised heel
-    ctx.beginPath();
-    (ctx as any).roundRect(0, -3, 11 * dir, 6, [3, 3, 2, 2]);
-    ctx.fill();
-    // Sole line
-    ctx.strokeStyle = colorToRgba(color, 0.5);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, 3);
-    ctx.lineTo(10 * dir, 3);
-    ctx.stroke();
+
+    if (shoe === "none") {
+      // Bare foot — body color
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -3, 11 * dir, 6, [3, 3, 2, 2]);
+      ctx.fill();
+    } else if (shoe === "sneakers") {
+      // White sneaker with colored stripe
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "#cccccc";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -3, 12 * dir, 7, [3, 3, 2, 2]);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.rect(2 * dir, -1, 6 * dir, 2);
+      ctx.fill();
+    } else if (shoe === "boots") {
+      // Tall dark brown boot
+      ctx.fillStyle = "#5c3d1e";
+      ctx.shadowColor = "#3a2510";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -5, 11 * dir, 10, [2, 2, 1, 1]);
+      ctx.fill();
+      ctx.strokeStyle = "#3a2510";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, -5);
+      ctx.lineTo(11 * dir, -5);
+      ctx.stroke();
+    } else if (shoe === "sandals") {
+      // Thin tan straps
+      ctx.fillStyle = "#c8a87a";
+      ctx.shadowColor = "#a08050";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -2, 11 * dir, 4, [2]);
+      ctx.fill();
+      ctx.strokeStyle = "#a08050";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(3 * dir, -2);
+      ctx.lineTo(3 * dir, 2);
+      ctx.moveTo(7 * dir, -2);
+      ctx.lineTo(7 * dir, 2);
+      ctx.stroke();
+    } else if (shoe === "cleats") {
+      // Dark cleat with spike dots
+      ctx.fillStyle = "#333333";
+      ctx.shadowColor = "#111111";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -3, 12 * dir, 6, [2, 2, 1, 1]);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc((2 + i * 3) * dir, 4, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (shoe === "heels") {
+      // Pink heel with raised back
+      ctx.fillStyle = "#ff80b0";
+      ctx.shadowColor = "#ff4488";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -2, 10 * dir, 5, [3, 1, 1, 3]);
+      ctx.fill();
+      // Heel post
+      ctx.fillStyle = "#ff4488";
+      ctx.beginPath();
+      ctx.rect(0, -2, 2 * dir, 6);
+      ctx.fill();
+    } else if (shoe === "skates") {
+      // Light blue boot with blade
+      ctx.fillStyle = "#aaddff";
+      ctx.shadowColor = "#6699cc";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -4, 11 * dir, 7, [2]);
+      ctx.fill();
+      // Blade underneath
+      ctx.strokeStyle = "#88bbdd";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-1 * dir, 3);
+      ctx.lineTo(13 * dir, 3);
+      ctx.stroke();
+    } else if (shoe === "flipFlops") {
+      // Bright flat slab
+      ctx.fillStyle = "#ffcc00";
+      ctx.shadowColor = "#cc9900";
+      ctx.beginPath();
+      (ctx as any).roundRect(-1 * dir, -2, 13 * dir, 5, [2]);
+      ctx.fill();
+      // Thong strap
+      ctx.strokeStyle = "#cc9900";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(5 * dir, -2);
+      ctx.lineTo(5 * dir, 3);
+      ctx.stroke();
+    } else if (shoe === "slippers") {
+      // Soft rounded pink slipper
+      ctx.fillStyle = "#e8b4b8";
+      ctx.shadowColor = "#d090a0";
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -3, 12 * dir, 7, [4, 4, 3, 3]);
+      ctx.fill();
+      ctx.fillStyle = "#d090a0";
+      ctx.beginPath();
+      (ctx as any).roundRect(1 * dir, -2, 5 * dir, 3, [3]);
+      ctx.fill();
+    } else if (shoe === "rocketBoots") {
+      // Orange boot with flame glow
+      ctx.fillStyle = "#ff6600";
+      ctx.shadowColor = "#ff4400";
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      (ctx as any).roundRect(0, -4, 11 * dir, 8, [2]);
+      ctx.fill();
+      // Flame accent at heel
+      ctx.fillStyle = "#ffcc00";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(1 * dir, 4, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Sole line for most shoes
+    if (shoe !== "none" && shoe !== "skates" && shoe !== "rocketBoots") {
+      ctx.strokeStyle = "rgba(0,0,0,0.3)";
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.lineTo(10 * dir, 3);
+      ctx.stroke();
+    }
+
     ctx.restore();
   };
   drawFoot(footFX, footFY, kneeFX, kneeFY, facing);

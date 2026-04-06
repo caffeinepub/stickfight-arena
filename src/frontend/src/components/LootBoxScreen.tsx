@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import {
   LOCKABLE_ABILITIES,
   LOCKABLE_HATS,
+  LOCKABLE_SHOES,
   getRandomLocked,
 } from "@/game/lootbox";
 import { playLootBox } from "@/game/sounds";
-import type { Hat, SpecialAbility } from "@/game/types";
+import type { Hat, Shoe, SpecialAbility } from "@/game/types";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
@@ -51,6 +52,56 @@ const HAT_INFO: Record<Hat, { emoji: string; label: string }> = {
   deerstalker: { emoji: "🔍", label: "Deerstalker" },
   laurel: { emoji: "🌿", label: "Laurel Wreath" },
 };
+
+const SHOE_INFO: Record<Shoe, { emoji: string; label: string; desc: string }> =
+  {
+    none: { emoji: "🦶", label: "Bare Feet", desc: "Going au naturel" },
+    sneakers: {
+      emoji: "👟",
+      label: "Sneakers",
+      desc: "Classic white kicks with colored stripe",
+    },
+    boots: {
+      emoji: "👢",
+      label: "Boots",
+      desc: "Tough dark brown stompers",
+    },
+    sandals: {
+      emoji: "🩴",
+      label: "Sandals",
+      desc: "Breezy tan sandals",
+    },
+    cleats: {
+      emoji: "⚽",
+      label: "Cleats",
+      desc: "Grip spikes for extra traction",
+    },
+    heels: {
+      emoji: "👠",
+      label: "Heels",
+      desc: "Pink stilettos — deadly and fabulous",
+    },
+    skates: {
+      emoji: "⛸️",
+      label: "Ice Skates",
+      desc: "Blue blades for slippery combat",
+    },
+    flipFlops: {
+      emoji: "🩴",
+      label: "Flip Flops",
+      desc: "Casual chaos on the battlefield",
+    },
+    slippers: {
+      emoji: "🥿",
+      label: "Slippers",
+      desc: "Soft comfort fighter footwear",
+    },
+    rocketBoots: {
+      emoji: "🚀",
+      label: "Rocket Boots",
+      desc: "Orange boots with afterburner flames",
+    },
+  };
 
 const ABILITY_INFO: Record<
   SpecialAbility,
@@ -216,14 +267,19 @@ const ABILITY_INFO: Record<
   },
 };
 
-type BoxType = "clothes" | "ability";
+type BoxType = "clothes" | "ability" | "shoe";
 
 interface LootBoxScreenProps {
   winner: 1 | 2;
   mode: "local" | "ai";
   unlockedHats: Hat[];
   unlockedAbilities: SpecialAbility[];
-  onDone: (newHats: Hat[], newAbilities: SpecialAbility[]) => void;
+  unlockedShoes: Shoe[];
+  onDone: (
+    newHats: Hat[],
+    newAbilities: SpecialAbility[],
+    newShoes: Shoe[],
+  ) => void;
 }
 
 export default function LootBoxScreen({
@@ -231,6 +287,7 @@ export default function LootBoxScreen({
   mode,
   unlockedHats,
   unlockedAbilities,
+  unlockedShoes,
   onDone,
 }: LootBoxScreenProps) {
   const [phase, setPhase] = useState<"choose" | "opening" | "reveal">("choose");
@@ -241,6 +298,7 @@ export default function LootBoxScreen({
   const [newHats, setNewHats] = useState<Hat[]>(unlockedHats);
   const [newAbilities, setNewAbilities] =
     useState<SpecialAbility[]>(unlockedAbilities);
+  const [newShoes, setNewShoes] = useState<Shoe[]>(unlockedShoes);
 
   const winnerColor = winner === 1 ? "#e05050" : "#5080e0";
   const isHumanWinner = !(mode === "ai" && winner === 2);
@@ -248,7 +306,11 @@ export default function LootBoxScreen({
   const allAbilitiesUnlocked = LOCKABLE_ABILITIES.every((a) =>
     unlockedAbilities.includes(a),
   );
-  const allUnlocked = allHatsUnlocked && allAbilitiesUnlocked;
+  const allShoesUnlocked = LOCKABLE_SHOES.every((s) =>
+    unlockedShoes.includes(s),
+  );
+  const allUnlocked =
+    allHatsUnlocked && allAbilitiesUnlocked && allShoesUnlocked;
   const winnerLabel = mode === "ai" && winner === 2 ? "AI" : `PLAYER ${winner}`;
 
   const openBox = (type: BoxType) => {
@@ -271,7 +333,7 @@ export default function LootBoxScreen({
           setRevealedLabel("Collection Complete!");
           setRevealedDesc("You have all the hats.");
         }
-      } else {
+      } else if (type === "ability") {
         const unlocked = getRandomLocked(
           unlockedAbilities,
           LOCKABLE_ABILITIES,
@@ -285,6 +347,21 @@ export default function LootBoxScreen({
           setRevealedItem("⚡");
           setRevealedLabel("Collection Complete!");
           setRevealedDesc("You have all the abilities.");
+        }
+      } else {
+        const unlocked = getRandomLocked(
+          unlockedShoes,
+          LOCKABLE_SHOES,
+        ) as Shoe | null;
+        if (unlocked) {
+          setNewShoes([...unlockedShoes, unlocked]);
+          setRevealedItem(SHOE_INFO[unlocked].emoji);
+          setRevealedLabel(SHOE_INFO[unlocked].label);
+          setRevealedDesc(SHOE_INFO[unlocked].desc);
+        } else {
+          setRevealedItem("👟");
+          setRevealedLabel("Collection Complete!");
+          setRevealedDesc("You have all the shoes.");
         }
       }
       setPhase("reveal");
@@ -327,7 +404,7 @@ export default function LootBoxScreen({
             <Button
               className="w-48 h-12 text-lg font-bold"
               style={{ background: "#D8C38A", color: "#1b242a" }}
-              onClick={() => onDone(newHats, newAbilities)}
+              onClick={() => onDone(newHats, newAbilities, newShoes)}
             >
               Continue
             </Button>
@@ -343,7 +420,7 @@ export default function LootBoxScreen({
             <Button
               className="w-48 h-12 text-lg font-bold"
               style={{ background: "#D8C38A", color: "#1b242a" }}
-              onClick={() => onDone(newHats, newAbilities)}
+              onClick={() => onDone(newHats, newAbilities, newShoes)}
             >
               Continue
             </Button>
@@ -353,7 +430,7 @@ export default function LootBoxScreen({
             <p className="text-muted-foreground mb-6 text-lg font-medium">
               Choose a box to open!
             </p>
-            <div className="flex gap-6 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               {[
                 {
                   type: "clothes" as BoxType,
@@ -361,6 +438,13 @@ export default function LootBoxScreen({
                   label: "Clothes Box",
                   sub: "Unlock new hats & styles",
                   done: allHatsUnlocked,
+                },
+                {
+                  type: "shoe" as BoxType,
+                  emoji: "👟",
+                  label: "Shoe Box",
+                  sub: "Unlock new footwear",
+                  done: allShoesUnlocked,
                 },
                 {
                   type: "ability" as BoxType,
@@ -373,13 +457,14 @@ export default function LootBoxScreen({
                 <motion.button
                   key={box.type}
                   type="button"
-                  className="flex flex-col items-center gap-3 p-6 rounded-xl cursor-pointer"
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl cursor-pointer"
                   style={{
                     background: box.done
                       ? "rgba(255,255,255,0.02)"
                       : "rgba(255,255,255,0.06)",
                     border: `1.5px solid ${box.done ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.18)"}`,
                     opacity: box.done ? 0.45 : 1,
+                    minWidth: 120,
                   }}
                   whileHover={box.done ? {} : { scale: 1.06, y: -4 }}
                   whileTap={box.done ? {} : { scale: 0.97 }}
@@ -387,7 +472,7 @@ export default function LootBoxScreen({
                   disabled={box.done}
                 >
                   <motion.div
-                    className="text-5xl"
+                    className="text-4xl"
                     animate={box.done ? {} : { rotate: [-3, 3, -3] }}
                     transition={{
                       duration: 1.5,
@@ -396,7 +481,7 @@ export default function LootBoxScreen({
                   >
                     {box.emoji}
                   </motion.div>
-                  <div className="text-base font-bold text-foreground">
+                  <div className="text-sm font-bold text-foreground">
                     {box.label}
                   </div>
                   <div className="text-xs text-muted-foreground">{box.sub}</div>
@@ -411,7 +496,7 @@ export default function LootBoxScreen({
             <button
               type="button"
               className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => onDone(newHats, newAbilities)}
+              onClick={() => onDone(newHats, newAbilities, newShoes)}
             >
               Skip →
             </button>
@@ -419,7 +504,12 @@ export default function LootBoxScreen({
         ) : phase === "opening" ? (
           <div className="mt-8">
             <p className="text-muted-foreground mb-6">
-              Opening {chosenBox === "clothes" ? "Clothes Box" : "Ability Box"}
+              Opening{" "}
+              {chosenBox === "clothes"
+                ? "Clothes Box"
+                : chosenBox === "shoe"
+                  ? "Shoe Box"
+                  : "Ability Box"}
               ...
             </p>
             <div className="flex gap-4 justify-center">
@@ -470,7 +560,7 @@ export default function LootBoxScreen({
               <Button
                 className="w-48 h-12 text-lg font-bold"
                 style={{ background: "#D8C38A", color: "#1b242a" }}
-                onClick={() => onDone(newHats, newAbilities)}
+                onClick={() => onDone(newHats, newAbilities, newShoes)}
               >
                 Continue
               </Button>

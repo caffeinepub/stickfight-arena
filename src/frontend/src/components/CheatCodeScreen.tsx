@@ -3,32 +3,45 @@ import { Input } from "@/components/ui/input";
 import {
   BASE_ABILITIES,
   BASE_HATS,
+  BASE_SHOES,
   LOCKABLE_ABILITIES,
   LOCKABLE_HATS,
+  LOCKABLE_SHOES,
   saveUnlocked,
 } from "@/game/lootbox";
-import type { Hat, SpecialAbility } from "@/game/types";
+import type { Hat, Shoe, SpecialAbility } from "@/game/types";
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState } from "react";
 
 interface CheatCodeScreenProps {
   onClose: () => void;
-  onCheatActivated: (newHats: Hat[], newAbilities: SpecialAbility[]) => void;
+  onCheatActivated: (
+    newHats: Hat[],
+    newAbilities: SpecialAbility[],
+    newShoes: Shoe[],
+  ) => void;
 }
 
 const unlockAll = () => {
   const hats = [...BASE_HATS, ...LOCKABLE_HATS];
   const abilities = [...BASE_ABILITIES, ...LOCKABLE_ABILITIES];
+  const shoes = [...BASE_SHOES, ...LOCKABLE_SHOES];
   return {
     hats,
     abilities,
-    message: "All cosmetics and abilities unlocked!",
+    shoes,
+    message: "All cosmetics, shoes and abilities unlocked!",
   };
 };
 
 const CHEAT_CODES: Record<
   string,
-  () => { hats: Hat[]; abilities: SpecialAbility[]; message: string }
+  () => {
+    hats: Hat[];
+    abilities: SpecialAbility[];
+    shoes: Shoe[];
+    message: string;
+  }
 > = {
   STICKGOD2026: unlockAll,
   UNLOCKALL: unlockAll,
@@ -46,17 +59,16 @@ export default function CheatCodeScreen({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleActivate = () => {
-    // strip spaces, uppercase, remove non-alphanumeric
     const normalized = code
       .trim()
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "");
     const cheat = CHEAT_CODES[normalized];
     if (cheat) {
-      const { hats, abilities, message } = cheat();
-      saveUnlocked(hats, abilities);
+      const { hats, abilities, shoes, message } = cheat();
+      saveUnlocked(hats, abilities, shoes);
       setResult({ type: "success", message: `\u2705 ${message}` });
-      onCheatActivated(hats, abilities);
+      onCheatActivated(hats, abilities, shoes);
     } else {
       setResult({ type: "error", message: "\u274C Invalid code" });
     }
@@ -79,7 +91,6 @@ export default function CheatCodeScreen({
         }}
       />
 
-      {/* Scrollable area so keyboard never hides content */}
       <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start px-4 py-8">
         <motion.div
           className="relative w-full max-w-md rounded-xl overflow-hidden"
@@ -131,7 +142,6 @@ export default function CheatCodeScreen({
               </p>
             </motion.div>
 
-            {/* Wrap in form so mobile keyboard "Go" button submits */}
             <motion.form
               className="mb-4"
               initial={{ opacity: 0, y: 10 }}
@@ -168,7 +178,6 @@ export default function CheatCodeScreen({
                 autoComplete="off"
                 spellCheck={false}
               />
-              {/* Hidden submit so pressing Go on mobile keyboard works */}
               <button
                 type="submit"
                 style={{
